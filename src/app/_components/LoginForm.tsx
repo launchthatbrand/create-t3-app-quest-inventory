@@ -15,6 +15,7 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { signInWithEmailAndPassword } from "../(auth)/actions";
 import { toast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -39,16 +40,31 @@ export default function LoginForm() {
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     console.log("form submitted");
+    const result = await signInWithEmailAndPassword(data);
+    console.log("result", result);
+    const { error } = result;
 
-    toast({
-      title: "form submitted:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          Sucessfully Registered:
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    if (error?.message) {
+      toast({
+        title: "You submitted the following values:",
+        description: (
+          <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+            <code className="text-white">{error.message}</code>
+          </pre>
+        ),
+      });
+    } else {
+      toast({
+        title: "Sucessfully Logged In:",
+        description: (
+          <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+            Sucessfully Registered:
+            <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+          </pre>
+        ),
+      });
+      router.push("/");
+    }
   }
 
   return (
