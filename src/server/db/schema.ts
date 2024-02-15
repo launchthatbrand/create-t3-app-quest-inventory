@@ -17,7 +17,9 @@ import { type AdapterAccount } from "next-auth/adapters";
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = mysqlTableCreator((name) => `create-t3-app_${name}`);
+export const createTable = mysqlTableCreator(
+  (name) => `create-t3-app-auth_${name}`,
+);
 
 export const posts = createTable(
   "post",

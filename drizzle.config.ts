@@ -8,5 +8,5 @@ export default {
   dbCredentials: {
     uri: env.DATABASE_URL,
   },
-  tablesFilter: ["create-t3-app_*"],
+  tablesFilter: ["create-t3-app-auth_*"],
 } satisfies Config;
