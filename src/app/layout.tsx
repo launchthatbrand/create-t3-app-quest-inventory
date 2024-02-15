@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import Header from "./_components/Header";
 import { Inter } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
+import { Toaster } from "./_components/ui/toaster";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
           <main className="flex flex-1 items-center justify-center text-white">
             {children}
           </main>
+          <Toaster />
         </TRPCReactProvider>
       </body>
     </html>
