@@ -1,5 +1,6 @@
 import {
   index,
+  jsonb,
   pgTableCreator,
   serial,
   timestamp,
@@ -30,3 +31,12 @@ export const posts = createTable(
     nameIndex: index("name_idx").on(example.name),
   }),
 );
+
+export const formResponse = createTable("formResponses", {
+  id: serial("id").primaryKey(),
+  data: jsonb("data"),
+  createdAt: timestamp("created_at")
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  updatedAt: timestamp("updatedAt"),
+});
