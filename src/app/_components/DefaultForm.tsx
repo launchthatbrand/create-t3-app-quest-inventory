@@ -1,7 +1,10 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 
-type Props = {};
+type Props = {
+  data: unknown;
+  type: "in" | "out";
+};
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,6 +22,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "./ui/use-toast";
+import { api } from "~/trpc/react";
+import { saveFormResponse } from "../monday/form/actions";
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -26,7 +31,7 @@ const formSchema = z.object({
   }),
 });
 
-export function DefaultForm() {
+export function DefaultForm({ data, type }: Props) {
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -36,10 +41,12 @@ export function DefaultForm() {
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     console.log("form submitted", values);
+    const jsonValues = JSON.stringify(values);
+    const result = await saveFormResponse(jsonValues);
 
     toast({
       title: "Sucessfully Submitted:",
@@ -52,9 +59,19 @@ export function DefaultForm() {
     });
   }
 
+  useEffect(() => {
+    if (data) {
+      const parsedData = JSON.parse(data);
+      form.reset(parsedData); // Prepopulate form if data is provided
+    }
+  }, [data, form.reset]);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-8 text-black"
+      >
         <FormField
           control={form.control}
           name="username"
@@ -71,7 +88,9 @@ export function DefaultForm() {
             </FormItem>
           )}
         />
-        <Button type="submit">Submit</Button>
+        <Button type="submit">
+          {type === "in" ? "Check-In" : "Check-Out"}
+        </Button>
       </form>
     </Form>
   );
