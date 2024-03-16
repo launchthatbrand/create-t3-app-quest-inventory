@@ -1,16 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 "use client";
-import React, { useEffect } from "react";
 
-type Props = {
-  data: unknown;
-  type: "in" | "out";
-};
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -20,10 +11,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import React, { useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "./ui/use-toast";
-import { api } from "~/trpc/react";
 import { saveFormResponse } from "../monday/form/actions";
+import { toast } from "./ui/use-toast";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+type Props = {
+  data?: string | null;
+  type: "in" | "out";
+};
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -32,6 +33,7 @@ const formSchema = z.object({
 });
 
 export function DefaultForm({ data, type }: Props) {
+  const disabled = type === "in";
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,6 +48,7 @@ export function DefaultForm({ data, type }: Props) {
     // ✅ This will be type-safe and validated.
     console.log("form submitted", values);
     const jsonValues = JSON.stringify(values);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const result = await saveFormResponse(jsonValues);
 
     toast({
@@ -64,6 +67,7 @@ export function DefaultForm({ data, type }: Props) {
       const parsedData = JSON.parse(data);
       form.reset(parsedData); // Prepopulate form if data is provided
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, form.reset]);
 
   return (
@@ -79,7 +83,7 @@ export function DefaultForm({ data, type }: Props) {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} />
+                <Input placeholder="shadcn" {...field} disabled={disabled} />
               </FormControl>
               <FormDescription>
                 This is your public display name.

@@ -1,5 +1,5 @@
 import React from "react";
-import SinglePostComponent from "../_components/Post";
+import SinglePostComponent from "../../_components/Post";
 import { fetchAllWorkspaces } from "./actions";
 
 // eslint-disable-next-line @typescript-eslint/ban-types

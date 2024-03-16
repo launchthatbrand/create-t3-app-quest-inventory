@@ -32,9 +32,9 @@ export const posts = createTable(
   }),
 );
 
-export const formResponse = createTable("formResponses", {
+export const formResponses = createTable("formResponses", {
   id: serial("id").primaryKey(),
-  data: jsonb("data"),
+  data: jsonb("data").$type<string>(),
   createdAt: timestamp("created_at")
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
