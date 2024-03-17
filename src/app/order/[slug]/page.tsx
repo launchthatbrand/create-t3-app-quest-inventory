@@ -8,6 +8,8 @@ export default async function Page({ params }: { params: { slug: string } }) {
   const result = await getFormData(id);
   console.log("data", result);
 
+  if (!result?.data) return <div>This form does not exist</div>;
+
   return (
     <div className="container flex flex-col items-center text-black">
       <DefaultForm data={result?.data} type="in" />

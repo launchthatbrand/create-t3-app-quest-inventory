@@ -7,6 +7,7 @@ export async function getFormData(id: number) {
     const result = await api.formResponse.getFormResponseById.query({
       id,
     });
+
     return result;
   } catch (error) {
     console.log("error", error);
