@@ -6,7 +6,7 @@ type Props = {};
 
 function CheckoutPage({}: Props) {
   return (
-    <div className="container flex w-2/5 flex-col items-center justify-center rounded-md bg-white p-3 text-black">
+    <div className="container flex flex-col items-center justify-center rounded-md p-3 text-black">
       <DefaultForm type="out" />
     </div>
   );
