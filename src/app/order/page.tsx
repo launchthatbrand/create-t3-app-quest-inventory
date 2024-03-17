@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { type inferProcedureOutput } from "@trpc/server";
 
 import { type AppRouter } from "~/server/api/root";
-import { getOrders } from "./actions";
-import { useRouter } from "next/navigation";
+import { deleteOrder } from "./actions";
+
 import { DefaultTable } from "../_components/Table";
+import { toast } from "../_components/ui/use-toast";
+import { api } from "~/trpc/react";
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 type Props = {};
@@ -16,38 +18,35 @@ export type orderType = inferProcedureOutput<
 >;
 
 export default function OrderPage({}: Props) {
-  const router = useRouter();
-  const [data, setData] = useState<orderType>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = api.formResponse.getOrdersByUserId.useQuery({
+    userId: "c2dbefb2-0bd4-4d22-a745-72c54dbc056e",
+  });
 
-  useEffect(() => {
-    async function getData() {
-      const allFormResponses = await getOrders();
-      console.log("allFormResponses", allFormResponses);
-      setData(allFormResponses);
-      setLoading(false);
-    }
+  // const [data, setData] = useState<orderType>([]);
+  // const [loading, setLoading] = useState(true);
 
-    void getData();
-  }, []);
+  async function handleDelete(id: number) {
+    console.log(`Deleting item with id: ${id}`);
+    // Implement your delete logic here
+    const result = deleteOrder(id);
+    console.log("handleDelete", result);
 
-  if (loading) return <div>Loading...</div>;
+    toast({
+      title: "Sucessfully Submitted:",
+      description: (
+        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+          Sucessfully Deleted:
+          <code className="text-white">{JSON.stringify(id, null, 2)}</code>
+        </pre>
+      ),
+    });
+  }
 
-  return (
-    <div className="container">
-      <DefaultTable data={data} />
-      {/* {data?.map((response, index) => {
-        return (
-          <div
-            key={index}
-            className="flex cursor-pointer flex-col rounded-md bg-slate-200 p-3 text-black"
-            onClick={() => router.push(`/order/${response.id}`)}
-          >
-            <span>{response.id}</span>
-            <span>{response.data}</span>
-          </div>
-        );
-      })} */}
-    </div>
-  );
+  if (isLoading) return <div>Loading...</div>;
+  if (data)
+    return (
+      <div className="container flex flex-col items-center justify-center">
+        <DefaultTable data={data} handleDelete={handleDelete} />
+      </div>
+    );
 }

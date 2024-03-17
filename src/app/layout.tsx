@@ -4,6 +4,7 @@ import Header from "./_components/Header";
 import { Inter } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "./_components/ui/toaster";
+import NextTopLoader from "nextjs-toploader";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +28,9 @@ export default function RootLayout({
         className={`font-sans ${inter.variable} flex min-h-screen flex-1 flex-col bg-gradient-to-b from-[#2e026d] to-[#15162c]`}
       >
         <TRPCReactProvider>
+          <NextTopLoader />
           <Header />
+
           <main className="flex flex-1 items-center justify-center text-white">
             {children}
           </main>

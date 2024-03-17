@@ -15,19 +15,43 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { type orderType } from "../order/page";
 import { Button } from "./ui/button";
 import { MoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface DefaultTableProps {
-  data: orderType; // Using the orderType array here
+  data: orderType;
+  handleDelete: (id: number) => void;
 }
 
-export function DefaultTable({ data }: DefaultTableProps) {
+export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
   const router = useRouter();
+  const onDeleteClick = (id: number) => {
+    handleDelete(id);
+  };
   return (
-    <div className="w-full rounded-md bg-slate-200 p-3 text-black">
+    <div className="flex w-2/5 flex-col space-y-3 rounded-md bg-white p-3 text-black">
+      <div className="flex w-full items-center justify-between">
+        Past Check-out Orders
+        <Button
+          className="self-end"
+          onClick={() => router.push("/monday/checkout")}
+        >
+          New Check-out Order
+        </Button>
+      </div>
       <Table>
         <TableCaption>A list of your past orders.</TableCaption>
         <TableHeader>
@@ -42,8 +66,8 @@ export function DefaultTable({ data }: DefaultTableProps) {
           {data?.map((item, index) => (
             <TableRow key={index}>
               <TableCell className="font-medium">{item.id}</TableCell>
-              <TableCell className="font-medium">{item.id}</TableCell>
-              <TableCell className="font-medium">{item.id}</TableCell>
+              <TableCell className="font-medium">Event 1</TableCell>
+              <TableCell className="font-medium">5</TableCell>
               <TableCell className="text-right font-medium">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -68,6 +92,33 @@ export function DefaultTable({ data }: DefaultTableProps) {
                       onClick={() => router.push(`/order/${item.id}`)}
                     >
                       Check In Order
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => e.preventDefault()}>
+                      <AlertDialog>
+                        <AlertDialogTrigger>
+                          Delete Order
+                          {/* <Button variant="ghost">Show Dialog</Button> */}
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you absolutely sure?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will
+                              permanently delete the order.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onDeleteClick(item.id)}
+                            >
+                              Continue
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

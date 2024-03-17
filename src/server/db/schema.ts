@@ -39,4 +39,5 @@ export const formResponses = createTable("formResponses", {
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
   updatedAt: timestamp("updatedAt"),
+  createdById: varchar("createdById", { length: 255 }).notNull(),
 });
