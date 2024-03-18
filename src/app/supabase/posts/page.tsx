@@ -4,7 +4,7 @@ import { api } from "~/trpc/server";
 
 async function SupabasePostsPage() {
   const data = await api.post.getAll.query();
-  console.log("data", data);
+
   return (
     <div className="space-y-3">
       <p> Supabase Posts:</p>

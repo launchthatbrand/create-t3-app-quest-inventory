@@ -47,7 +47,7 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
         Past Check-out Orders
         <Button
           className="self-end"
-          onClick={() => router.push("/monday/checkout")}
+          onClick={() => router.push("/order/checkout")}
         >
           New Check-out Order
         </Button>

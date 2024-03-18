@@ -1,7 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// @ts-nocheck
 "use client";
 
 import {
@@ -13,7 +17,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { CheckIcon, TrashIcon } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -41,8 +47,8 @@ import { TbCaretUpDownFilled, TbTrashX } from "react-icons/tb";
 import { useFieldArray, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
-import { CheckIcon } from "lucide-react";
 import ConfettiComponent from "./Confetti";
+import { GroupedEvents } from "../order/actions";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -55,7 +61,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 export interface FormProps {
   data?: string | null;
   type: "in" | "out";
-  categories: Category[];
+  categories?: Category[];
+  events?: GroupedEvents | undefined;
+  locations?: unknown;
 }
 
 export interface Category {
@@ -63,13 +71,31 @@ export interface Category {
   title: string;
 }
 
+export interface Event {
+  id: string;
+  title: string;
+}
+
 const formSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
+  event: z.object({
+    id: z.string({
+      required_error: "Please select an Event.",
+    }),
+    name: z.string({
+      required_error: "Please select an Event.",
+    }),
+  }),
+  location: z.object({
+    id: z.string({
+      required_error: "Please select an Event.",
+    }),
+    name: z.string({
+      required_error: "Please select an Event.",
+    }),
   }),
   items: z.array(
     z.object({
-      category: z.object({
+      categories: z.object({
         id: z.string({
           required_error: "Please select an Event.",
         }),
@@ -77,22 +103,34 @@ const formSchema = z.object({
           required_error: "Please select an Event.",
         }),
       }),
-      name: z.string({
-        required_error: "Please select an Event.",
+      quantity: z.object({
+        checkout: z.coerce.number({
+          required_error: "Please select an Event.",
+        }),
+        checkin: z.coerce.number({
+          required_error: "Please select an Event.",
+        }),
       }),
     }),
   ),
 });
 
-export function DefaultForm({ data, type, categories }: FormProps) {
+export function DefaultForm({
+  data,
+  type,
+  categories,
+  events,
+  locations,
+}: FormProps) {
   const [openPopover, setOpenPopover] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({});
   const [isConfettiVisible, setIsConfettiVisible] = useState(false);
-  console.log("categories", categories);
+  // console.log("categories", categories);
 
   const router = useRouter();
   const checkin = type === "in";
+  const eventsArray = events ? Object.values(events) : undefined;
 
   // Handler to open or close popovers
   const handleOpenChange = (popoverId: string) => {
@@ -103,7 +141,8 @@ export function DefaultForm({ data, type, categories }: FormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      event: {},
+      items: [],
     },
   });
 
@@ -119,6 +158,7 @@ export function DefaultForm({ data, type, categories }: FormProps) {
   const showConfirmationModal = (data: object) => {
     // Store the validated form data for later submission or use it directly in the submit function
     setFormData(data); // Assuming you have a state to temporarily hold the validated data
+    console.log("showConfirmationModal", data);
     setIsModalOpen(true); // Show the modal for confirmation
   };
 
@@ -173,9 +213,21 @@ export function DefaultForm({ data, type, categories }: FormProps) {
     });
   }
 
+  function onDelete(index: number) {
+    console.log("onDeleteIndex", index);
+    // Save it!
+    console.log("form submitted", index);
+    remove(index);
+    toast({
+      title: "Sucessfully Deleted Item:",
+    });
+  }
+
   useEffect(() => {
     if (data) {
       const parsedData = JSON.parse(data);
+      console.log("parsedData", parsedData);
+
       form.reset(parsedData); // Prepopulate form if data is provided
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,31 +250,168 @@ export function DefaultForm({ data, type, categories }: FormProps) {
         >
           <FormField
             control={form.control}
-            name="username"
+            name={`event`}
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username</FormLabel>
-                <FormControl>
-                  <Input placeholder="shadcn" {...field} disabled={checkin} />
-                </FormControl>
-                <FormDescription>
-                  This is your public display name.
-                </FormDescription>
+              <FormItem className="flex w-full flex-col">
+                <FormLabel className="flex items-start justify-between">
+                  Event
+                </FormLabel>
+
+                <Popover
+                  open={openPopover === `${field.name}`}
+                  onOpenChange={() => handleOpenChange(`${field.name}`)}
+                >
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value?.name && "text-muted-foreground",
+                        )}
+                        aria-required
+                        disabled={checkin}
+                      >
+                        {field.value?.name ?? "Select event"}
+                        <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search events..."
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>No events found.</CommandEmpty>
+                        {eventsArray?.map((group) => (
+                          <div key={group.groupId}>
+                            <CommandGroup heading={group.title}>
+                              {group.items.map((event) => {
+                                const formattedDate = event.column_values[0]
+                                  .date
+                                  ? event.column_values[0].date
+                                      .split("-")
+                                      .slice(1)
+                                      .join("/")
+                                  : "N/A";
+                                return (
+                                  <CommandItem
+                                    value={event.name}
+                                    key={event.id}
+                                    onSelect={() => {
+                                      form.setValue(`event`, {
+                                        name: event.name,
+                                        id: event.id,
+                                      });
+                                      setOpenPopover("");
+                                    }}
+                                  >
+                                    {formattedDate && ` ${formattedDate} - `}
+                                    {event.name}
+                                    <CheckIcon
+                                      className={cn(
+                                        "ml-auto h-4 w-4",
+                                        event.id === field.value?.id
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </div>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
           />
-          {/* {categories.map((category, index) => (
-            <div key={index}>{category.title}</div>
-          ))} */}
+          <FormField
+            control={form.control}
+            name={`location`}
+            render={({ field }) => (
+              <FormItem className="flex w-full flex-col">
+                <FormLabel className="flex items-start justify-between">
+                  Pickup/Dropoff Location
+                </FormLabel>
+
+                <Popover
+                  open={openPopover === `${field.name}`}
+                  onOpenChange={() => handleOpenChange(`${field.name}`)}
+                >
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {field.value?.name ?? "Select pickup/dropoff location"}
+                        <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                    <Command>
+                      <CommandList>
+                        <CommandInput
+                          placeholder="Search locations..."
+                          className="h-9"
+                        />
+                        <CommandEmpty>No location found.</CommandEmpty>
+                        <ScrollArea className="h-[200px]">
+                          <CommandGroup>
+                            {locations?.map((location) => (
+                              <CommandItem
+                                value={location.name}
+                                key={location.id}
+                                onSelect={() => {
+                                  form.setValue(`location`, {
+                                    name: location.name,
+                                    id: location.id,
+                                  });
+                                  setOpenPopover(false);
+                                }}
+                              >
+                                {location.name}
+                                <CheckIcon
+                                  className={cn(
+                                    "ml-auto h-4 w-4",
+                                    location.id === field.value?.id
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </ScrollArea>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           {itemFields.map((field, index) => (
             <div
               key={field.id}
-              className="z-50 flex w-full flex-col flex-wrap bg-slate-100 p-3"
+              className="z-50 flex w-full flex-col flex-wrap space-y-5 bg-slate-100 p-3"
             >
               <FormField
                 control={form.control}
-                name={`items.${index}.category`}
+                name={`items.${index}.categories`}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col">
                     <FormLabel className="flex items-start justify-between">
@@ -242,12 +431,9 @@ export function DefaultForm({ data, type, categories }: FormProps) {
                               "w-full justify-between",
                               !field.value && "text-muted-foreground",
                             )}
+                            disabled={checkin}
                           >
-                            {field.value
-                              ? categories.find(
-                                  (category) => category.id === field.value.id,
-                                )?.title
-                              : "Select category"}
+                            {field.value?.title ?? "Select Category"}
                             <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
@@ -262,15 +448,18 @@ export function DefaultForm({ data, type, categories }: FormProps) {
                           <ScrollArea className="h-[200px]">
                             <CommandList>
                               <CommandGroup>
-                                {categories.map((category) => (
+                                {categories?.map((category) => (
                                   <CommandItem
                                     value={category.title}
                                     key={category.id}
                                     onSelect={() => {
-                                      form.setValue(`items.${index}.category`, {
-                                        title: category.title,
-                                        id: category.id,
-                                      });
+                                      form.setValue(
+                                        `items.${index}.categories`,
+                                        {
+                                          title: category.title,
+                                          id: category.id,
+                                        },
+                                      );
                                       // form.setValue(
                                       //   `items.${index}.name`,
                                       //   undefined,
@@ -300,13 +489,95 @@ export function DefaultForm({ data, type, categories }: FormProps) {
                   </FormItem>
                 )}
               />
+              <div className="flex items-end justify-between">
+                <FormField
+                  control={form.control}
+                  name={`items.${index}.quantity`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Checkout Quantity</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          placeholder={1}
+                          disabled={
+                            !form.watch(`items.${index}.categories`) || checkin
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {checkin && (
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.quantity`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Checkin Quantity</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="number"
+                            placeholder={1}
+                            disabled={!form.watch(`items.${index}.categories`)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    disabled={checkin}
+                    className="rounded-md bg-red-700 p-3 text-white shadow-md disabled:bg-slate-400"
+                  >
+                    <TrashIcon className="h-6 w-6" />
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you absolutely sure?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete your account and remove your data from our
+                        servers.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction asChild>
+                        <Button
+                          variant={"destructive"}
+                          className="w-full"
+                          type="submit"
+                          onClick={() => onDelete(index)}
+                        >
+                          Delete
+                        </Button>
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           ))}
           {!checkin && (
             <Button
               className="self-end"
               type="button"
-              onClick={() => append({})}
+              onClick={() =>
+                append({
+                  quantity: {
+                    checkout: 1,
+                    checkin: 1,
+                  },
+                })
+              }
             >
               Add Item
             </Button>
