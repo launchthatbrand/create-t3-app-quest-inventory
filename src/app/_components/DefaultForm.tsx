@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 "use client";
@@ -11,6 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { TbCaretUpDownFilled, TbTrashX } from "react-icons/tb";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,25 +23,45 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
 import React, { useEffect, useState } from "react";
 import ConfettiComponent from "./Confetti";
 
 import { Button } from "@/components/ui/button";
-import { saveFormResponse } from "../monday/form/actions";
 import { toast } from "./ui/use-toast";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { saveFormResponse } from "../monday/actions";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "./ui/command";
+import { ScrollArea } from "./ui/scroll-area";
+import { CheckIcon } from "lucide-react";
 
-type Props = {
+export interface FormProps {
   data?: string | null;
   type: "in" | "out";
-};
+  categories: Category[];
+}
+
+export interface Category {
+  id: string;
+  name: string;
+}
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -46,6 +69,14 @@ const formSchema = z.object({
   }),
   items: z.array(
     z.object({
+      category: z.object({
+        id: z.string({
+          required_error: "Please select an Event.",
+        }),
+        title: z.string({
+          required_error: "Please select an Event.",
+        }),
+      }),
       name: z.string({
         required_error: "Please select an Event.",
       }),
@@ -53,13 +84,22 @@ const formSchema = z.object({
   ),
 });
 
-export function DefaultForm({ data, type }: Props) {
+export function DefaultForm({ data, type, categories }: FormProps) {
+  const [openPopover, setOpenPopover] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({});
   const [isConfettiVisible, setIsConfettiVisible] = useState(false);
+  console.log("categories", categories);
+
   const router = useRouter();
   const checkin = type === "in";
-  // 1. Define your form.
+
+  // Handler to open or close popovers
+  const handleOpenChange = (popoverId: string) => {
+    setOpenPopover((current) => (current === popoverId ? null : popoverId));
+  };
+
+  //  Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -82,7 +122,7 @@ export function DefaultForm({ data, type }: Props) {
     setIsModalOpen(true); // Show the modal for confirmation
   };
 
-  // 2. Define a submit handler.
+  // Define a submit handler.
   async function confirmAndSubmit() {
     console.log("Form data:", formData);
     // Submit formData here
@@ -172,6 +212,9 @@ export function DefaultForm({ data, type }: Props) {
               </FormItem>
             )}
           />
+          {/* {categories.map((category, index) => (
+            <div key={index}>{category.title}</div>
+          ))} */}
           {itemFields.map((field, index) => (
             <div
               key={field.id}
@@ -179,18 +222,78 @@ export function DefaultForm({ data, type }: Props) {
             >
               <FormField
                 control={form.control}
-                name={`items.${index}.name`}
+                name={`items.${index}.category`}
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Item Category</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="shadcn"
-                        {...field}
-                        disabled={checkin}
-                      />
-                    </FormControl>
-                    <FormDescription>The item category</FormDescription>
+                  <FormItem className="flex w-full flex-col">
+                    <FormLabel className="flex items-start justify-between">
+                      Category
+                    </FormLabel>
+
+                    <Popover
+                      open={openPopover === `${field.name}`}
+                      onOpenChange={() => handleOpenChange(`${field.name}`)}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value
+                              ? categories.find(
+                                  (category) => category.id === field.value.id,
+                                )?.title
+                              : "Select category"}
+                            <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search categories..."
+                            className="h-9"
+                          />
+                          <CommandEmpty>No framework found.</CommandEmpty>
+                          <ScrollArea className="h-[200px]">
+                            <CommandGroup>
+                              {categories.map((category) => (
+                                <CommandItem
+                                  value={category.title}
+                                  key={category.id}
+                                  // onSelect={() => {
+                                  //   form.setValue(`items.${index}.category`, {
+                                  //     title: category.title,
+                                  //     id: category.id,
+                                  //   });
+                                  //   // form.setValue(
+                                  //   //   `items.${index}.name`,
+                                  //   //   undefined,
+                                  //   // );
+                                  //   // setSelectedCategory(category.id);
+                                  //   setOpenPopover("");
+                                  // }}
+                                >
+                                  {category.name}
+                                  <CheckIcon
+                                    className={cn(
+                                      "ml-auto h-4 w-4",
+                                      category.id === field.value?.id
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </ScrollArea>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -201,11 +304,7 @@ export function DefaultForm({ data, type }: Props) {
             <Button
               className="self-end"
               type="button"
-              onClick={() =>
-                append({
-                  quantity: "1",
-                })
-              }
+              onClick={() => append({})}
             >
               Add Item
             </Button>
