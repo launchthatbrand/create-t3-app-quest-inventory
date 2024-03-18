@@ -5,16 +5,6 @@
 "use client";
 
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { TbCaretUpDownFilled, TbTrashX } from "react-icons/tb";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -24,33 +14,43 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-
-import React, { useEffect, useState } from "react";
-import ConfettiComponent from "./Confetti";
-
-import { Button } from "@/components/ui/button";
-import { toast } from "./ui/use-toast";
-import { useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import { saveFormResponse } from "../monday/actions";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "./ui/command";
-import { ScrollArea } from "./ui/scroll-area";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import React, { useEffect, useState } from "react";
+import { TbCaretUpDownFilled, TbTrashX } from "react-icons/tb";
+import { useFieldArray, useForm } from "react-hook-form";
+
+import { Button } from "@/components/ui/button";
 import { CheckIcon } from "lucide-react";
+import ConfettiComponent from "./Confetti";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "./ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { saveFormResponse } from "../monday/actions";
+import { toast } from "./ui/use-toast";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export interface FormProps {
   data?: string | null;
@@ -60,7 +60,7 @@ export interface FormProps {
 
 export interface Category {
   id: string;
-  name: string;
+  title: string;
 }
 
 const formSchema = z.object({
@@ -260,36 +260,38 @@ export function DefaultForm({ data, type, categories }: FormProps) {
                           />
                           <CommandEmpty>No framework found.</CommandEmpty>
                           <ScrollArea className="h-[200px]">
-                            <CommandGroup>
-                              {categories.map((category) => (
-                                <CommandItem
-                                  value={category.title}
-                                  key={category.id}
-                                  // onSelect={() => {
-                                  //   form.setValue(`items.${index}.category`, {
-                                  //     title: category.title,
-                                  //     id: category.id,
-                                  //   });
-                                  //   // form.setValue(
-                                  //   //   `items.${index}.name`,
-                                  //   //   undefined,
-                                  //   // );
-                                  //   // setSelectedCategory(category.id);
-                                  //   setOpenPopover("");
-                                  // }}
-                                >
-                                  {category.name}
-                                  <CheckIcon
-                                    className={cn(
-                                      "ml-auto h-4 w-4",
-                                      category.id === field.value?.id
-                                        ? "opacity-100"
-                                        : "opacity-0",
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
+                            <CommandList>
+                              <CommandGroup>
+                                {categories.map((category) => (
+                                  <CommandItem
+                                    value={category.title}
+                                    key={category.id}
+                                    onSelect={() => {
+                                      form.setValue(`items.${index}.category`, {
+                                        title: category.title,
+                                        id: category.id,
+                                      });
+                                      // form.setValue(
+                                      //   `items.${index}.name`,
+                                      //   undefined,
+                                      // );
+                                      // setSelectedCategory(category.id);
+                                      setOpenPopover("");
+                                    }}
+                                  >
+                                    {category.title}
+                                    <CheckIcon
+                                      className={cn(
+                                        "ml-auto h-4 w-4",
+                                        category.id === field.value?.id
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
                           </ScrollArea>
                         </Command>
                       </PopoverContent>
