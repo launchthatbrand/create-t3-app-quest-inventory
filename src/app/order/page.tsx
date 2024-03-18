@@ -45,7 +45,7 @@ export default function OrderPage({}: Props) {
   if (isLoading) return <div>Loading...</div>;
   if (data)
     return (
-      <div className="container flex flex-col items-center justify-center">
+      <div className="container flex flex-col items-center justify-center py-8">
         <DefaultTable data={data} handleDelete={handleDelete} />
       </div>
     );

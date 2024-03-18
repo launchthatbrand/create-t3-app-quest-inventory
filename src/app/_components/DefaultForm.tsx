@@ -22,17 +22,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+
 import React, { useEffect, useState } from "react";
 import ConfettiComponent from "./Confetti";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { saveFormResponse } from "../monday/form/actions";
 import { toast } from "./ui/use-toast";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@trpc/server";
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -44,6 +44,13 @@ const formSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
   }),
+  items: z.array(
+    z.object({
+      name: z.string({
+        required_error: "Please select an Event.",
+      }),
+    }),
+  ),
 });
 
 export function DefaultForm({ data, type }: Props) {
@@ -51,13 +58,22 @@ export function DefaultForm({ data, type }: Props) {
   const [formData, setFormData] = useState({});
   const [isConfettiVisible, setIsConfettiVisible] = useState(false);
   const router = useRouter();
-  const disabled = type === "in";
+  const checkin = type === "in";
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
     },
+  });
+
+  const {
+    fields: itemFields,
+    append,
+    remove,
+  } = useFieldArray({
+    control: form.control,
+    name: "items", // The key of the field array
   });
 
   const showConfirmationModal = (data: object) => {
@@ -67,10 +83,13 @@ export function DefaultForm({ data, type }: Props) {
   };
 
   // 2. Define a submit handler.
-  function confirmAndSubmit() {
+  async function confirmAndSubmit() {
     console.log("Form data:", formData);
     // Submit formData here
     // const result = createCheckoutOrder(formData);
+    const jsonValues = JSON.stringify(formData);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const result = await saveFormResponse(jsonValues);
     form.reset();
     setIsModalOpen(false);
     // Show confetti
@@ -123,7 +142,7 @@ export function DefaultForm({ data, type }: Props) {
   }, [data, form.reset]);
 
   return (
-    <div className="flex w-2/5 flex-col rounded-md bg-white p-3 text-black shadow-md">
+    <div className="flex w-full flex-1 flex-col rounded-md bg-white p-3 text-black shadow-md md:w-2/5">
       {isConfettiVisible && <ConfettiComponent />}
       <div className="flex w-full items-center justify-between">
         {type === "in" ? "Check-In Form" : "Check-Out Form"}
@@ -144,7 +163,7 @@ export function DefaultForm({ data, type }: Props) {
               <FormItem>
                 <FormLabel>Username</FormLabel>
                 <FormControl>
-                  <Input placeholder="shadcn" {...field} disabled={disabled} />
+                  <Input placeholder="shadcn" {...field} disabled={checkin} />
                 </FormControl>
                 <FormDescription>
                   This is your public display name.
@@ -153,6 +172,45 @@ export function DefaultForm({ data, type }: Props) {
               </FormItem>
             )}
           />
+          {itemFields.map((field, index) => (
+            <div
+              key={field.id}
+              className="z-50 flex w-full flex-col flex-wrap bg-slate-100 p-3"
+            >
+              <FormField
+                control={form.control}
+                name={`items.${index}.name`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Item Category</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="shadcn"
+                        {...field}
+                        disabled={checkin}
+                      />
+                    </FormControl>
+                    <FormDescription>The item category</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          ))}
+          {!checkin && (
+            <Button
+              className="self-end"
+              type="button"
+              onClick={() =>
+                append({
+                  quantity: "1",
+                })
+              }
+            >
+              Add Item
+            </Button>
+          )}
+
           <Button
             type="submit"
             onClick={form.handleSubmit(showConfirmationModal)}

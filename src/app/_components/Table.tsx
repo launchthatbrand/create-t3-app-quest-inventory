@@ -42,7 +42,7 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
     handleDelete(id);
   };
   return (
-    <div className="flex w-2/5 flex-col space-y-3 rounded-md bg-white p-3 text-black">
+    <div className="flex w-full flex-col gap-y-3 rounded-md bg-white p-3 text-black md:w-2/5">
       <div className="flex w-full items-center justify-between">
         Past Check-out Orders
         <Button

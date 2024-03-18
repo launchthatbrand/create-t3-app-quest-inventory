@@ -12,7 +12,7 @@ function Header() {
         </div>
         <div className="flex items-center space-x-10">
           <TopNavbar />
-          <AuthButton />
+          {/* <AuthButton /> */}
         </div>
       </div>
     </header>

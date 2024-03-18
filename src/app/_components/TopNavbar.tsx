@@ -14,46 +14,145 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+
 import Link from "next/link";
 import { cn } from "~/lib/utils";
+import { Button } from "./ui/button";
+import { MenuIcon } from "lucide-react";
 
 export default function NavigationMenuDemo() {
+  const [sheetOpen, setSheetOpen] = React.useState(false);
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <Link href="/demo" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              Demo Page
-            </NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link href="/supabase/posts" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              Supabase Posts
-            </NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link href="/demo/supabaseclient" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              Supabase Data - Client
-            </NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <NavigationMenuTrigger>Monday</NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
-              <ListItem title="Workspaces" href="/monday/workspaces"></ListItem>
-              <ListItem title="Form" href="/monday/form"></ListItem>
-              <ListItem title="Orders" href="/monday/order"></ListItem>
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+    <>
+      <div className="hidden md:flex">
+        <NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <Link href="/demo" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Demo Page
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link href="/supabase/posts" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Supabase Posts
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link href="/demo/supabaseclient" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Supabase Data - Client
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuTrigger>Monday</NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                  <ListItem
+                    title="Workspaces"
+                    href="/monday/workspaces"
+                  ></ListItem>
+                  <ListItem title="Form" href="/monday/form"></ListItem>
+                  <ListItem title="Orders" href="/monday/order"></ListItem>
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+            <NavigationMenuItem className="!ml-[3em]">
+              <Link href="/demo/supabaseclient" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Logout
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+      </div>
+      <div className="md:hidden">
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline">
+              <MenuIcon />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side={"left"}>
+            <SheetHeader></SheetHeader>
+            <NavigationMenu
+              orientation="vertical"
+              className="mt-10 flex flex-col"
+            >
+              <NavigationMenuList className="flex-col items-start space-x-0">
+                <NavigationMenuItem>
+                  <Link href="/demo" legacyBehavior passHref>
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                      onClick={() => setSheetOpen(false)}
+                    >
+                      Demo Page
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link href="/supabase/posts" legacyBehavior passHref>
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                      onClick={() => setSheetOpen(false)}
+                    >
+                      Supabase Posts
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link href="/demo/supabaseclient" legacyBehavior passHref>
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                      onClick={() => setSheetOpen(false)}
+                    >
+                      Supabase Data - Client
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Monday</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] ">
+                      <ListItem
+                        title="Workspaces"
+                        href="/monday/workspaces"
+                        onClick={() => setSheetOpen(false)}
+                      ></ListItem>
+                      <ListItem
+                        title="Form"
+                        href="/monday/form"
+                        onClick={() => setSheetOpen(false)}
+                      ></ListItem>
+                      <ListItem
+                        title="Orders"
+                        href="/monday/order"
+                        onClick={() => setSheetOpen(false)}
+                      ></ListItem>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </>
   );
 }
 
