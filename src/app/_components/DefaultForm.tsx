@@ -19,6 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { CheckIcon, TrashIcon } from "lucide-react";
 import {
   Command,
@@ -58,6 +64,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
+import { Textarea } from "./ui/textarea";
 
 export interface FormProps {
   data?: string | null;
@@ -109,6 +116,9 @@ const formSchema = z.object({
         required_error: "Please select an Event.",
       }),
       name: z.string({
+        required_error: "Please select an Event.",
+      }),
+      desc: z.string({
         required_error: "Please select an Event.",
       }),
       quantity: z.object({
@@ -453,288 +463,334 @@ export function DefaultForm({
               </FormItem>
             )}
           />
-          {itemFields.map((field, index) => (
-            <div
-              key={field.id}
-              className="z-50 flex w-full flex-col flex-wrap space-y-3 rounded-md bg-slate-200 p-5 shadow-sm"
-            >
-              <span className="font-bold">Item {index + 1}</span>
-              <FormField
-                control={form.control}
-                name={`items.${index}.categories`}
-                render={({ field }) => (
-                  <FormItem className="flex w-full flex-col">
-                    <FormLabel className="flex items-start justify-between">
-                      Category
-                    </FormLabel>
 
-                    <Popover
-                      open={openPopover === `${field.name}`}
-                      onOpenChange={() => handleOpenChange(`${field.name}`)}
-                    >
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value && "text-muted-foreground",
-                            )}
-                            disabled={checkin}
-                          >
-                            {field.value?.title ?? "Select Category"}
-                            <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                        <Command>
-                          <CommandInput
-                            placeholder="Search categories..."
-                            className="h-9"
-                          />
-                          <CommandEmpty>No framework found.</CommandEmpty>
-                          <ScrollArea className="h-[200px]">
-                            <CommandList>
-                              <CommandGroup>
-                                {categories?.map((category) => (
-                                  <CommandItem
-                                    value={category.title}
-                                    key={category.id}
-                                    onSelect={() => {
-                                      form.setValue(
-                                        `items.${index}.categories`,
-                                        {
-                                          title: category.title,
-                                          id: category.id,
-                                        },
-                                      );
-                                      // form.setValue(
-                                      //   `items.${index}.name`,
-                                      //   undefined,
-                                      // );
-                                      setSelectedCategory(category.id);
-                                      setOpenPopover("");
-                                    }}
-                                  >
-                                    {category.title}
-                                    <CheckIcon
-                                      className={cn(
-                                        "ml-auto h-4 w-4",
-                                        category.id === field.value?.id
-                                          ? "opacity-100"
-                                          : "opacity-0",
-                                      )}
-                                    />
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </ScrollArea>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name={`items.${index}`}
-                render={({ field }) => (
-                  <FormItem className="flex w-[100%] flex-col">
-                    <FormLabel>Product</FormLabel>
+          <Accordion type="multiple" collapsible className="w-full">
+            <div className="space-y-3">
+              {itemFields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="z-50 flex w-full flex-col flex-wrap gap-y-3 space-y-3 rounded-md bg-slate-200 shadow-sm"
+                >
+                  <AccordionItem value={field.id} className="space-y-3 p-3">
+                    <AccordionTrigger className="p-0">
+                      Item {index + 1}
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-5">
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.categories`}
+                        render={({ field }) => (
+                          <FormItem className="flex w-full flex-col">
+                            <FormLabel className="flex items-start justify-between">
+                              Category
+                            </FormLabel>
 
-                    <Popover
-                      open={openPopover === `${field.name}`}
-                      onOpenChange={() => handleOpenChange(`${field.name}`)}
-                    >
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value && "text-muted-foreground",
-                            )}
-                            disabled={
-                              !form.watch(`items.${index}.categories`) ||
-                              checkin
-                            }
-                          >
-                            {field.value.name
-                              ? field.value.name
-                              : !form.watch(`items.${index}.categories`)
-                                ? "Select a category first"
-                                : "Select Product"}
-
-                            <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                        <Command
-                          filter={(value, search) => {
-                            if (value.includes(search)) return 1;
-                            return 0;
-                          }}
-                        >
-                          <CommandInput
-                            placeholder="Search products..."
-                            className="h-9"
-                          />
-                          <CommandList>
-                            <CommandEmpty>No framework found.</CommandEmpty>
-                            <ScrollArea className="h-[300px]">
-                              <CommandGroup>
-                                {filteredItems.map((item) => (
-                                  <CommandItem
-                                    value={item.name.replace(/"/g, '\\"')}
-                                    key={item.id}
-                                    className="text-base font-medium"
-                                    onSelect={() => {
-                                      form.setValue(
-                                        `items.${index}.name`,
-                                        item.name,
-                                      );
-                                      form.setValue(
-                                        `items.${index}.id`,
-                                        item.id,
-                                      );
-                                      setOpenPopover(false);
-                                    }}
-                                  >
-                                    <div className="flex items-center gap-x-5">
-                                      <Image
-                                        className="min-w-[120px]"
-                                        src={
-                                          item.assets[0]?.public_url ??
-                                          "https://static.thenounproject.com/png/261694-200.png"
-                                        }
-                                        alt="product image"
-                                        width={100}
-                                        height={100}
-                                      />
-                                      {item.name}
-                                    </div>
-
-                                    <CheckIcon
-                                      className={cn(
-                                        "ml-auto h-4 w-4",
-                                        item.id === field.value?.id
-                                          ? "opacity-100"
-                                          : "opacity-0",
-                                      )}
-                                    />
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </ScrollArea>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex items-end justify-between space-x-5">
-                <FormField
-                  control={form.control}
-                  name={`items.${index}.quantity.checkout`}
-                  render={({ field }) => (
-                    <FormItem className="w-2/5">
-                      <FormLabel>Checkout Quantity</FormLabel>
-                      <FormDescription>
-                        Total items checked out.
-                      </FormDescription>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          placeholder={1}
-                          min={1}
-                          disabled={
-                            !form.watch(`items.${index}.categories`) || checkin
-                          }
-                        />
-                      </FormControl>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {checkin && (
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.quantity.checkin`}
-                    render={({ field }) => {
-                      const checkoutQuantity = form.watch(
-                        `items.${index}.quantity.checkout`,
-                      );
-                      return (
-                        <FormItem className="w-2/5">
-                          <FormLabel>Checkin Quantity</FormLabel>
-                          <FormDescription>
-                            Total items checked in.
-                          </FormDescription>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="number"
-                              min={0}
-                              max={checkoutQuantity}
-                              placeholder={1}
-                              disabled={
-                                !form.watch(`items.${index}.categories`)
+                            <Popover
+                              open={openPopover === `${field.name}`}
+                              onOpenChange={() =>
+                                handleOpenChange(`${field.name}`)
                               }
-                            />
-                          </FormControl>
+                            >
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                      "w-full justify-between",
+                                      !field.value && "text-muted-foreground",
+                                    )}
+                                    disabled={checkin}
+                                  >
+                                    {field.value?.title ?? "Select Category"}
+                                    <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                <Command>
+                                  <CommandInput
+                                    placeholder="Search categories..."
+                                    className="h-9"
+                                  />
+                                  <CommandEmpty>
+                                    No framework found.
+                                  </CommandEmpty>
+                                  <ScrollArea className="h-[200px]">
+                                    <CommandList>
+                                      <CommandGroup>
+                                        {categories?.map((category) => (
+                                          <CommandItem
+                                            value={category.title}
+                                            key={category.id}
+                                            onSelect={() => {
+                                              form.setValue(
+                                                `items.${index}.categories`,
+                                                {
+                                                  title: category.title,
+                                                  id: category.id,
+                                                },
+                                              );
+                                              // form.setValue(
+                                              //   `items.${index}.name`,
+                                              //   undefined,
+                                              // );
+                                              setSelectedCategory(category.id);
+                                              setOpenPopover("");
+                                            }}
+                                          >
+                                            {category.title}
+                                            <CheckIcon
+                                              className={cn(
+                                                "ml-auto h-4 w-4",
+                                                category.id === field.value?.id
+                                                  ? "opacity-100"
+                                                  : "opacity-0",
+                                              )}
+                                            />
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </ScrollArea>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}`}
+                        render={({ field }) => (
+                          <FormItem className="flex w-[100%] flex-col">
+                            <FormLabel>Product</FormLabel>
 
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                )}
-                <AlertDialog>
-                  <AlertDialogTrigger
-                    disabled={checkin}
-                    className="rounded-md bg-red-700 p-2 text-white shadow-md disabled:bg-slate-400"
-                  >
-                    <TrashIcon className="h-6 w-6" />
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Are you absolutely sure?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete your account and remove your data from our
-                        servers.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction asChild>
-                        <Button
-                          variant={"destructive"}
-                          className="w-full"
-                          type="submit"
-                          onClick={() => onDelete(index)}
-                        >
-                          Delete
-                        </Button>
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+                            <Popover
+                              open={openPopover === `${field.name}`}
+                              onOpenChange={() =>
+                                handleOpenChange(`${field.name}`)
+                              }
+                            >
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                      "w-full justify-between",
+                                      !field.value && "text-muted-foreground",
+                                    )}
+                                    disabled={
+                                      !form.watch(
+                                        `items.${index}.categories`,
+                                      ) || checkin
+                                    }
+                                  >
+                                    {field.value.name
+                                      ? field.value.name
+                                      : !form.watch(`items.${index}.categories`)
+                                        ? "Select a category first"
+                                        : "Select Product"}
+
+                                    <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                <Command
+                                  filter={(value, search) => {
+                                    if (value.includes(search)) return 1;
+                                    return 0;
+                                  }}
+                                >
+                                  <CommandInput
+                                    placeholder="Search products..."
+                                    className="h-9"
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      No framework found.
+                                    </CommandEmpty>
+                                    <ScrollArea className="h-[300px]">
+                                      <CommandGroup>
+                                        {filteredItems.map((item) => (
+                                          <CommandItem
+                                            value={item.name.replace(
+                                              /"/g,
+                                              '\\"',
+                                            )}
+                                            key={item.id}
+                                            className="text-base font-medium"
+                                            onSelect={() => {
+                                              form.setValue(
+                                                `items.${index}.name`,
+                                                item.name,
+                                              );
+                                              form.setValue(
+                                                `items.${index}.id`,
+                                                item.id,
+                                              );
+                                              setOpenPopover(false);
+                                            }}
+                                          >
+                                            <div className="flex items-center gap-x-5">
+                                              <Image
+                                                className="min-w-[120px]"
+                                                src={
+                                                  item.assets[0]?.public_url ??
+                                                  "https://static.thenounproject.com/png/261694-200.png"
+                                                }
+                                                alt="product image"
+                                                width={100}
+                                                height={100}
+                                              />
+                                              {item.name}
+                                            </div>
+
+                                            <CheckIcon
+                                              className={cn(
+                                                "ml-auto h-4 w-4",
+                                                item.id === field.value?.id
+                                                  ? "opacity-100"
+                                                  : "opacity-0",
+                                              )}
+                                            />
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </ScrollArea>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.desc`}
+                        render={({ field }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel>Notes</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                disabled={
+                                  !form.watch(`items.${index}.categories`) ||
+                                  checkin
+                                }
+                                placeholder="Additional notes here..."
+                              />
+                            </FormControl>
+
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex items-end justify-between space-x-5">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.quantity.checkout`}
+                          render={({ field }) => (
+                            <FormItem className="space-y-1">
+                              <FormLabel>Checkout Quantity</FormLabel>
+                              <FormDescription>
+                                Total items checked out.
+                              </FormDescription>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  placeholder={1}
+                                  min={1}
+                                  disabled={
+                                    !form.watch(`items.${index}.categories`) ||
+                                    checkin
+                                  }
+                                />
+                              </FormControl>
+
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        {checkin && (
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.quantity.checkin`}
+                            render={({ field }) => {
+                              const checkoutQuantity = form.watch(
+                                `items.${index}.quantity.checkout`,
+                              );
+                              return (
+                                <FormItem className="space-y-1">
+                                  <FormLabel>Checkin Quantity</FormLabel>
+                                  <FormDescription>
+                                    Total items checked in.
+                                  </FormDescription>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      type="number"
+                                      min={0}
+                                      max={checkoutQuantity}
+                                      placeholder={1}
+                                      disabled={
+                                        !form.watch(`items.${index}.categories`)
+                                      }
+                                    />
+                                  </FormControl>
+
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            disabled={checkin}
+                            className="rounded-md bg-red-700 p-2 text-white shadow-md disabled:bg-slate-400"
+                          >
+                            <TrashIcon className="h-6 w-6" />
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Are you absolutely sure?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete your account and remove your
+                                data from our servers.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction asChild>
+                                <Button
+                                  variant={"destructive"}
+                                  className="w-full"
+                                  type="submit"
+                                  onClick={() => onDelete(index)}
+                                >
+                                  Delete
+                                </Button>
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </div>
+              ))}
             </div>
-          ))}
+          </Accordion>
+
           {!checkin && (
             <Button
               className="self-end"
