@@ -32,6 +32,18 @@ export async function deleteOrder(id: number) {
   return result;
 }
 
+export async function fetchItems() {
+  try {
+    const query =
+      '{ boards (ids: 5798486455) { items_page (limit: 500 , query_params: {order_by:[{column_id:"name"}]}) { items { id name group { title id } assets { id public_url }} } } }';
+    const result = await monday.api(query, options);
+    // console.log("fetchItems", result);
+    return result;
+  } catch (error) {
+    console.log("error", error);
+  }
+}
+
 export async function fetchCategories() {
   try {
     const query = "query { boards (ids: 5798486455) { groups { title id }} }";

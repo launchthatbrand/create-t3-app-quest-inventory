@@ -57,6 +57,7 @@ import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 
 export interface FormProps {
   data?: string | null;
@@ -64,6 +65,7 @@ export interface FormProps {
   categories?: Category[];
   events?: GroupedEvents | undefined;
   locations?: unknown;
+  items?: unknown;
 }
 
 export interface Category {
@@ -103,6 +105,12 @@ const formSchema = z.object({
           required_error: "Please select an Event.",
         }),
       }),
+      id: z.string({
+        required_error: "Please select an Event.",
+      }),
+      name: z.string({
+        required_error: "Please select an Event.",
+      }),
       quantity: z.object({
         checkout: z.coerce.number({
           required_error: "Please select an Event.",
@@ -121,7 +129,10 @@ export function DefaultForm({
   categories,
   events,
   locations,
+  items,
 }: FormProps) {
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [openPopover, setOpenPopover] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({});
@@ -142,7 +153,7 @@ export function DefaultForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       event: {},
-      items: [],
+      items: [{}],
     },
   });
 
@@ -233,11 +244,37 @@ export function DefaultForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, form.reset]);
 
+  useEffect(() => {
+    const loadFilteredItems = () => {
+      if (selectedCategory) {
+        try {
+          console.log("selectedCategory", selectedCategory);
+          const newFilteredItems = items.filter(
+            (item) => item.group.id === selectedCategory,
+          );
+          setFilteredItems(newFilteredItems);
+          console.log("filteredItems", filteredItems);
+        } catch (error) {
+          console.error("Failed to fetch filtered data:", error);
+          // Handle error or set data to null/empty state
+        }
+      } else {
+        setFilteredItems([]);
+      }
+    };
+    void loadFilteredItems();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
+
   return (
     <div className="flex w-full flex-1 flex-col rounded-md bg-white p-3 text-black shadow-md md:w-2/5">
       {isConfettiVisible && <ConfettiComponent />}
-      <div className="flex w-full items-center justify-between">
-        {type === "in" ? "Check-In Form" : "Check-Out Form"}
+      <div className="mb-10 flex w-full items-start justify-between">
+        <span className="text-xl font-bold">
+          {type === "in" ? "Check-In Form" : "Check-Out Form"}
+        </span>
+
         <Button className="self-end" onClick={() => router.push("/order")}>
           Previous Orders
         </Button>
@@ -408,8 +445,9 @@ export function DefaultForm({
           {itemFields.map((field, index) => (
             <div
               key={field.id}
-              className="z-50 flex w-full flex-col flex-wrap space-y-5 bg-slate-100 p-3"
+              className="z-50 flex w-full flex-col flex-wrap space-y-3 bg-slate-200 p-3"
             >
+              <span className="font-bold">Item {index + 1}</span>
               <FormField
                 control={form.control}
                 name={`items.${index}.categories`}
@@ -465,7 +503,7 @@ export function DefaultForm({
                                       //   `items.${index}.name`,
                                       //   undefined,
                                       // );
-                                      // setSelectedCategory(category.id);
+                                      setSelectedCategory(category.id);
                                       setOpenPopover("");
                                     }}
                                   >
@@ -490,6 +528,107 @@ export function DefaultForm({
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name={`items.${index}`}
+                render={({ field }) => (
+                  <FormItem className="flex w-[100%] flex-col">
+                    <FormLabel>Product</FormLabel>
+
+                    <Popover
+                      open={openPopover === `${field.name}`}
+                      onOpenChange={() => handleOpenChange(`${field.name}`)}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground",
+                            )}
+                            disabled={
+                              !form.watch(`items.${index}.categories`) ||
+                              checkin
+                            }
+                          >
+                            {field.value.name
+                              ? field.value.name
+                              : !form.watch(`items.${index}.categories`)
+                                ? "Select a category first"
+                                : "Select Product"}
+
+                            <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                        <Command
+                          filter={(value, search) => {
+                            if (value.includes(search)) return 1;
+                            return 0;
+                          }}
+                        >
+                          <CommandInput
+                            placeholder="Search products..."
+                            className="h-9"
+                          />
+                          <CommandList>
+                            <CommandEmpty>No framework found.</CommandEmpty>
+                            <ScrollArea className="h-[300px]">
+                              <CommandGroup>
+                                {filteredItems.map((item) => (
+                                  <CommandItem
+                                    value={item.name.replace(/"/g, '\\"')}
+                                    key={item.id}
+                                    className="text-base font-medium"
+                                    onSelect={() => {
+                                      form.setValue(
+                                        `items.${index}.name`,
+                                        item.name,
+                                      );
+                                      form.setValue(
+                                        `items.${index}.id`,
+                                        item.id,
+                                      );
+                                      setOpenPopover(false);
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-x-5">
+                                      <Image
+                                        className="min-w-[120px]"
+                                        src={
+                                          item.assets[0]?.public_url ??
+                                          "https://static.thenounproject.com/png/261694-200.png"
+                                        }
+                                        alt="product image"
+                                        width={100}
+                                        height={100}
+                                      />
+                                      {item.name}
+                                    </div>
+
+                                    <CheckIcon
+                                      className={cn(
+                                        "ml-auto h-4 w-4",
+                                        item.id === field.value?.id
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </ScrollArea>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex items-end justify-between">
                 <FormField
                   control={form.control}
@@ -507,6 +646,9 @@ export function DefaultForm({
                           }
                         />
                       </FormControl>
+                      <FormDescription>
+                        Total items checked out.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -526,6 +668,9 @@ export function DefaultForm({
                             disabled={!form.watch(`items.${index}.categories`)}
                           />
                         </FormControl>
+                        <FormDescription>
+                          Total items checked in.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -534,7 +679,7 @@ export function DefaultForm({
                 <AlertDialog>
                   <AlertDialogTrigger
                     disabled={checkin}
-                    className="rounded-md bg-red-700 p-3 text-white shadow-md disabled:bg-slate-400"
+                    className="mb-7 rounded-md bg-red-700 p-3 text-white shadow-md disabled:bg-slate-400"
                   >
                     <TrashIcon className="h-6 w-6" />
                   </AlertDialogTrigger>

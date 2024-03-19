@@ -9,6 +9,16 @@ const config = {
   experimental: {
     serverComponentsExternalPackages: ["monday-sdk-js"],
   },
+  images: {
+    remotePatterns: [
+      {
+        hostname: "static.thenounproject.com",
+      },
+      {
+        hostname: "files-monday-com.s3.amazonaws.com",
+      },
+    ],
+  },
 };
 
 export default config;
