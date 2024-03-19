@@ -473,7 +473,7 @@ export function DefaultForm({
                 >
                   <AccordionItem value={field.id} className="space-y-3 p-3">
                     <AccordionTrigger className="p-0">
-                      Item {index + 1}
+                      {form.watch(`items.${index}.name`) ?? `Item ${index + 1}`}
                     </AccordionTrigger>
                     <AccordionContent className="space-y-5">
                       <FormField
