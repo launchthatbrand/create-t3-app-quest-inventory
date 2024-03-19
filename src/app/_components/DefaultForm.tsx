@@ -355,6 +355,7 @@ export function DefaultForm({
                           "w-full justify-between",
                           !field.value && "text-muted-foreground",
                         )}
+                        disabled={checkin}
                       >
                         {field.value?.name ?? "Select pickup/dropoff location"}
                         <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -492,7 +493,7 @@ export function DefaultForm({
               <div className="flex items-end justify-between">
                 <FormField
                   control={form.control}
-                  name={`items.${index}.quantity`}
+                  name={`items.${index}.quantity.checkout`}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Checkout Quantity</FormLabel>
@@ -513,7 +514,7 @@ export function DefaultForm({
                 {checkin && (
                   <FormField
                     control={form.control}
-                    name={`items.${index}.quantity`}
+                    name={`items.${index}.quantity.checkin`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Checkin Quantity</FormLabel>
