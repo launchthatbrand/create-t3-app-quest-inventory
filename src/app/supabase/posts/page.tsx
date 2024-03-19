@@ -1,8 +1,10 @@
 import React from "react";
 import SinglePostComponent from "~/app/_components/Post";
 import { api } from "~/trpc/server";
+import { unstable_noStore as noStore } from "next/cache";
 
 async function SupabasePostsPage() {
+  noStore();
   const data = await api.post.getAll.query();
 
   return (
