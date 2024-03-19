@@ -11,7 +11,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
   if (!result?.data) return <div>This form does not exist</div>;
 
   return (
-    <div className="container flex flex-col items-center text-black">
+    <div className="container flex flex-col items-center py-32 text-black">
       <DefaultForm data={result?.data} type="in" />
     </div>
   );

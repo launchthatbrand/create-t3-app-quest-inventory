@@ -5,7 +5,7 @@ import TopNavbar from "./TopNavbar";
 
 function Header() {
   return (
-    <header className="flex items-center justify-center bg-white py-3 shadow-md">
+    <header className="fixed z-10 flex w-full items-center justify-center bg-white py-3 shadow-md">
       <div className="container flex w-full items-center justify-between">
         <div>
           <Logo />

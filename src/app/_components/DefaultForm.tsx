@@ -123,6 +123,17 @@ const formSchema = z.object({
   ),
 });
 
+function enforceMinMax(el) {
+  if (el.value != "") {
+    if (parseInt(el.value) < parseInt(el.min)) {
+      el.value = el.min;
+    }
+    if (parseInt(el.value) > parseInt(el.max)) {
+      el.value = el.max;
+    }
+  }
+}
+
 export function DefaultForm({
   data,
   type,
@@ -445,7 +456,7 @@ export function DefaultForm({
           {itemFields.map((field, index) => (
             <div
               key={field.id}
-              className="z-50 flex w-full flex-col flex-wrap space-y-3 bg-slate-200 p-3"
+              className="z-50 flex w-full flex-col flex-wrap space-y-3 rounded-md bg-slate-200 p-5 shadow-sm"
             >
               <span className="font-bold">Item {index + 1}</span>
               <FormField
@@ -629,26 +640,28 @@ export function DefaultForm({
                   </FormItem>
                 )}
               />
-              <div className="flex items-end justify-between">
+              <div className="flex items-end justify-between space-x-5">
                 <FormField
                   control={form.control}
                   name={`items.${index}.quantity.checkout`}
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-2/5">
                       <FormLabel>Checkout Quantity</FormLabel>
+                      <FormDescription>
+                        Total items checked out.
+                      </FormDescription>
                       <FormControl>
                         <Input
                           {...field}
                           type="number"
                           placeholder={1}
+                          min={1}
                           disabled={
                             !form.watch(`items.${index}.categories`) || checkin
                           }
                         />
                       </FormControl>
-                      <FormDescription>
-                        Total items checked out.
-                      </FormDescription>
+
                       <FormMessage />
                     </FormItem>
                   )}
@@ -657,29 +670,39 @@ export function DefaultForm({
                   <FormField
                     control={form.control}
                     name={`items.${index}.quantity.checkin`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Checkin Quantity</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            placeholder={1}
-                            disabled={!form.watch(`items.${index}.categories`)}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Total items checked in.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      const checkoutQuantity = form.watch(
+                        `items.${index}.quantity.checkout`,
+                      );
+                      return (
+                        <FormItem className="w-2/5">
+                          <FormLabel>Checkin Quantity</FormLabel>
+                          <FormDescription>
+                            Total items checked in.
+                          </FormDescription>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              max={checkoutQuantity}
+                              placeholder={1}
+                              disabled={
+                                !form.watch(`items.${index}.categories`)
+                              }
+                            />
+                          </FormControl>
+
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger
                     disabled={checkin}
-                    className="mb-7 rounded-md bg-red-700 p-3 text-white shadow-md disabled:bg-slate-400"
+                    className="rounded-md bg-red-700 p-2 text-white shadow-md disabled:bg-slate-400"
                   >
                     <TrashIcon className="h-6 w-6" />
                   </AlertDialogTrigger>
