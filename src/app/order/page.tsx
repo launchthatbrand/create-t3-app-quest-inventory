@@ -19,7 +19,7 @@ export type orderType = inferProcedureOutput<
 
 export default function OrderPage({}: Props) {
   const { data, isLoading } = api.formResponse.getOrdersByUserId.useQuery({
-    userId: "c2dbefb2-0bd4-4d22-a745-72c54dbc056e",
+    userId: "1dfdbcdc-d168-402b-9982-dac2ba6ef2be",
   });
 
   // const [data, setData] = useState<orderType>([]);
@@ -45,7 +45,7 @@ export default function OrderPage({}: Props) {
   if (isLoading) return <div>Loading...</div>;
   if (data)
     return (
-      <div className="container flex flex-col items-center justify-center py-8">
+      <div className="container flex flex-col items-center justify-center py-40">
         <DefaultTable data={data} handleDelete={handleDelete} />
       </div>
     );

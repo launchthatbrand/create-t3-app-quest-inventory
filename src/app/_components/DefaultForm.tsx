@@ -132,6 +132,7 @@ const formSchema = z.object({
     }),
   ),
 });
+export type InventoryFormData = z.infer<typeof formSchema>;
 
 function enforceMinMax(el) {
   if (el.value != "") {
@@ -170,7 +171,7 @@ export function DefaultForm({
   };
 
   //  Define your form.
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<InventoryFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       event: {},

@@ -5,6 +5,7 @@ import { api } from "~/trpc/server";
 import { getServerAuthSession } from "~/server/auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { readUserSession } from "./(auth)/actions";
+import { fetchCategories2 } from "./order/checkout/actions";
 
 export default async function Home() {
   noStore();
@@ -13,6 +14,8 @@ export default async function Home() {
   const {
     data: { session },
   } = await readUserSession();
+
+  const result = await fetchCategories2();
 
   return (
     <main className="flex flex-col items-center justify-center">

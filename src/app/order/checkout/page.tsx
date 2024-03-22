@@ -26,7 +26,7 @@ async function CheckoutPage({}: Props) {
 
   // console.log("categories", categories);
   return (
-    <div className="container flex flex-col items-center justify-center rounded-md p-3 text-black">
+    <div className="container flex flex-col items-center justify-center rounded-md p-3 py-48 text-black">
       <DefaultForm
         type="out"
         categories={categories}
