@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -11,6 +12,7 @@ import { type AppRouter } from "~/server/api/root";
 
 import mondaySdk from "monday-sdk-js";
 import { type APIOptions } from "monday-sdk-js/types/client-api.interface";
+import { JsonObject } from "next-auth/adapters";
 
 const monday = mondaySdk();
 monday.setApiVersion("2023-10");
@@ -20,35 +22,36 @@ const options: APIOptions = {
 };
 
 export async function saveFormResponse(values: string) {
-  let dbData, createItemResponse, createSubItemResponse;
-
-  // Step 1: Save the form response to the database
   try {
-    dbData = await saveToDatabase(values);
+    // Step 1: Save the form response to the database
+    const dbData = await saveToDatabase(values);
     console.log("saveFormResponse_server", dbData);
+    if (!dbData) return;
+
+    // Step 2: Create Monday Item and SubItems
+    const createMondayItemResult = await createMondayItem(dbData);
+    if (!createMondayItemResult) return;
+    const MondayItemId = createMondayItemResult.createMondayItemId;
+    const updatedFormData = JSON.stringify(
+      createMondayItemResult.updatedFormData,
+    );
+    console.log("updatedFormData", updatedFormData);
+
+    // Step 3: Update Database again
+
+    const updateResponse = await api.formResponse.updateWithMondayData.mutate({
+      id: dbData.id,
+      mondayItemId: MondayItemId,
+      data: updatedFormData,
+    });
   } catch (error) {
     console.log("Error saving to database", error);
     // Handle this error specifically, maybe return or throw a custom error
     throw new Error("Database save failed");
   }
-
-  // Check if dbData is undefined and handle the error
-  if (!dbData) {
-    throw new Error(
-      "No data returned from database, cannot create Monday item.",
-    );
-  }
-
-  // Step 2: Use the response from the database to create a Monday item
-  try {
-    createItemResponse = await createMondayItem(dbData);
-    console.log("createItemResponse", createItemResponse);
-  } catch (error) {
-    console.log("Error creating Monday item", error);
-    // Handle this error specifically
-    throw new Error("Monday item creation failed");
-  }
 }
+
+export async function updateFormResponse(values: string) {}
 
 export async function readUserSession() {
   const supabase = await supabaseServer();
@@ -88,19 +91,31 @@ export async function createMondayItem(
 
   const formData: InventoryFormData = JSON.parse(dbData.data);
   try {
-    const mutation1 = `mutation { create_item (board_id: 6309440166, item_name: \"Order# ${dbData.id}\", column_values: \"{ \\\"email\\\": \\\"${user?.email} ${user?.email}\\\", \\\"text0\\\": \\\"${user?.tel}\\\", \\\"text3\\\": \\\"${formData.location.name}\\\",\\\"text4\\\": \\\"${formData.event.name}\\\", \\\"text\\\": \\\"${user?.firstName}\\\", \\\"status\\\": \\\"2\\\" }\") { id board { id } } }`;
-    const result1 = await monday.api(mutation1, options);
-    const updateResponse = await api.formResponse.updateWithMondayData.mutate({
-      id: dbData.id,
-      mondayItemId: result1.data.create_item.id,
-    });
-    console.log("createItem_result1", updateResponse);
-    const result2 = await Promise.all(
+    const mutation = `mutation { create_item (board_id: 6309440166, item_name: \"Order# ${dbData.id}\", column_values: \"{ \\\"email\\\": \\\"${user?.email} ${user?.email}\\\", \\\"text0\\\": \\\"${user?.tel}\\\", \\\"text3\\\": \\\"${formData.location.name}\\\",\\\"text4\\\": \\\"${formData.event.name}\\\", \\\"text\\\": \\\"${user?.firstName}\\\", \\\"status\\\": \\\"2\\\" }\") { id board { id } } }`;
+    const createMondayItemResult = await monday.api(mutation, options);
+    const createMondayItemId = createMondayItemResult.data.create_item.id;
+
+    console.log("createMondayItemId", createMondayItemId);
+
+    const updatedItems = await Promise.all(
       formData.items.map(async (item) => {
-        const response = await createSubitem(item, result1.data.create_item.id);
-        // return response.json();
+        const itemId = await createSubitem(
+          item,
+          createMondayItemResult.data.create_item.id,
+        ); // Your function to create an item on Monday
+        return { ...item, itemId }; // Append the itemId to the item
       }),
     );
+
+    // Update the formData with the updated items
+    const updatedFormData = { ...formData, items: updatedItems };
+    console.log("");
+
+    return { createMondayItemId, updatedFormData };
+
+    // // Now, update the JSONB column in your database with this updatedFormData
+    // await updateFormDataInDatabase(dbData.id, updatedFormData); // Implement this function based on your DB solution
+
     // const item_id = result1.data.create_item.id;
     // console.log("createItem_itemID", item_id);
     // const mutation2 = `mutation { change_multiple_column_values (board_id: 5980720965, item_id: \"${item_id}\", column_values: \"{ \\\"name\\\": \\\"${item_name} : ${item_id}\\\" }\") { id board { id } } }`;
@@ -112,17 +127,20 @@ export async function createMondayItem(
   }
 }
 
+export async function updateFormDataInDatabase(
+  databaseId: number,
+  updatedFormData: JsonObject,
+) {}
+
 export async function createSubitem(
   data: InventoryFormData["items"][number],
   newItemId: string,
 ) {
   try {
-    console.log("createSubitem", data);
     const { name, id, quantity } = data;
     const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: \"${name}\", column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text_1\\\": \\\"${id}\\\" }\") { id board { id } } }`;
     const result = await monday.api(mutation, options);
-    console.log("createSubitem", result);
-    // return result;
+    return result.data.create_subitem.id;
   } catch (error) {
     console.log("error", error);
   }

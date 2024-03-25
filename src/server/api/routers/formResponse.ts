@@ -20,12 +20,19 @@ export const formResponseRouter = createTRPCRouter({
       return newRecord;
     }),
   updateWithMondayData: publicProcedure
-    .input(z.object({ id: z.number(), mondayItemId: z.string() }))
+    .input(
+      z.object({
+        id: z.number(),
+        mondayItemId: z.string(),
+        data: z.string().min(1),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const [newRecord] = await ctx.db
         .update(formResponses)
         .set({
           mondayItemId: input.mondayItemId,
+          data: input.data,
         })
         .where(eq(formResponses.id, input.id))
         .returning();

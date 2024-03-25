@@ -143,7 +143,7 @@ function enforceMinMax(el) {
   }
 }
 
-export function DefaultForm({
+export function CheckinForm({
   data,
   type,
   categories,
