@@ -9,6 +9,12 @@
 "use client";
 
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -19,12 +25,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { CheckIcon, TrashIcon } from "lucide-react";
 import {
   Command,
@@ -55,16 +55,16 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import ConfettiComponent from "./Confetti";
 import { GroupedEvents } from "../order/actions";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "./ui/scroll-area";
+import { Textarea } from "./ui/textarea";
 import { cn } from "@/lib/utils";
 import { saveFormResponse } from "../monday/actions";
 import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Image from "next/image";
-import { Textarea } from "./ui/textarea";
 
 export interface FormProps {
   data?: string | null;
@@ -118,9 +118,7 @@ const formSchema = z.object({
       name: z.string({
         required_error: "Please select an Event.",
       }),
-      desc: z.string({
-        required_error: "Please select an Event.",
-      }),
+      desc: z.string().optional(),
       quantity: z.object({
         checkout: z.coerce.number({
           required_error: "Please select an Event.",
@@ -171,11 +169,11 @@ export function DefaultForm({
   };
 
   //  Define your form.
-  const form = useForm<InventoryFormData>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       event: {},
-      items: [{}],
+      items: [],
     },
   });
 
@@ -198,16 +196,17 @@ export function DefaultForm({
   // Define a submit handler.
   async function confirmAndSubmit() {
     console.log("Form data:", formData);
-    // Submit formData here
-    // const result = createCheckoutOrder(formData);
     const jsonValues = JSON.stringify(formData);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const result = await saveFormResponse(jsonValues);
+    if (checkin) {
+      const result = await saveFormResponse(jsonValues);
+    } else {
+    }
+
     form.reset();
     setIsModalOpen(false);
+
     // Show confetti
     setIsConfettiVisible(true);
-
     // Hide confetti after 5 seconds
     setTimeout(() => setIsConfettiVisible(false), 5000);
 
@@ -612,7 +611,7 @@ export function DefaultForm({
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      No framework found.
+                                      No products found.
                                     </CommandEmpty>
                                     <ScrollArea className="h-[300px]">
                                       <CommandGroup>

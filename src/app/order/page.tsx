@@ -9,6 +9,7 @@ import { deleteOrder } from "./actions";
 import { DefaultTable } from "../_components/Table";
 import { toast } from "../_components/ui/use-toast";
 import { api } from "~/trpc/react";
+import { readUserSession } from "../(auth)/actions";
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 type Props = {};
@@ -19,8 +20,9 @@ export type orderType = inferProcedureOutput<
 
 export default function OrderPage({}: Props) {
   const { data, isLoading } = api.formResponse.getOrdersByUserId.useQuery({
-    userId: "1dfdbcdc-d168-402b-9982-dac2ba6ef2be",
+    userId: "72c73f99-1ba1-4aeb-8769-8bb3b159132d",
   });
+  console.log("data", data);
 
   // const [data, setData] = useState<orderType>([]);
   // const [loading, setLoading] = useState(true);

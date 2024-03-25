@@ -19,7 +19,7 @@ async function CheckoutPage({}: Props) {
   const fetchedLocations = await fetchLocations();
   const fetchedItems = await fetchItems();
   const items = fetchedItems?.data?.boards[0].items_page.items;
-  console.log("items", items);
+  // console.log("items", items);
   const locations = fetchedLocations?.data.boards[0].items_page.items;
   const fetchedCategories = await fetchCategories();
   const categories = fetchedCategories?.data.boards[0].groups;

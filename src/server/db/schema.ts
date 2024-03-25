@@ -1,12 +1,15 @@
 import {
   index,
   jsonb,
+  pgSchema,
   pgTableCreator,
   serial,
   timestamp,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { InventoryFormData } from "~/app/_components/DefaultForm";
 import { sql } from "drizzle-orm";
 
 /**
@@ -34,10 +37,29 @@ export const posts = createTable(
 
 export const formResponses = createTable("formResponses", {
   id: serial("id").primaryKey(),
-  data: jsonb("data").$type<string>(),
+  data: jsonb("data").$type<string>().notNull(),
   createdAt: timestamp("created_at")
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
   updatedAt: timestamp("updatedAt"),
   createdById: varchar("createdById", { length: 255 }).notNull(),
+  mondayItemId: varchar("mondayItemId", { length: 256 }),
+});
+
+export const authSchema = pgSchema("auth");
+
+export const authUsers = authSchema.table("users", {
+  id: uuid("id").primaryKey().notNull(),
+});
+
+export const users = createTable("user", {
+  id: uuid("id")
+    .primaryKey()
+    .notNull()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+
+  firstName: varchar("firstName", { length: 256 }),
+  lastName: varchar("lastName", { length: 256 }),
+  email: varchar("email", { length: 256 }),
+  tel: varchar("tel", { length: 256 }),
 });
