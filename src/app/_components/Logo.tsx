@@ -13,7 +13,7 @@ function Logo() {
         width={0}
         height={0}
         sizes="100vw"
-        className=" w-[150px]"
+        className=" w-[100px]"
       />
     </Link>
   );
