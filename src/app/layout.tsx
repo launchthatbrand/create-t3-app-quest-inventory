@@ -2,9 +2,9 @@ import "~/styles/globals.css";
 
 import Header from "./_components/Header";
 import { Inter } from "next/font/google";
+import NextTopLoader from "nextjs-toploader";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "./_components/ui/toaster";
-import NextTopLoader from "nextjs-toploader";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,7 +31,7 @@ export default function RootLayout({
           <NextTopLoader />
           <Header />
 
-          <main className="flex flex-1 flex-col items-center justify-center text-white">
+          <main className="flex flex-1 flex-col items-center justify-center py-20 text-white">
             {children}
           </main>
           <Toaster />

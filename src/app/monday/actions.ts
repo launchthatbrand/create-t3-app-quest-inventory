@@ -109,6 +109,12 @@ export async function updateSubitem(data: any) {
 
     const query2 = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers5\"]) { text }} }`;
     const query3 = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers\"]) { text }} }`;
+    const query4 = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers6\"]) { text }} }`;
+
+    const result5 = await monday.api(query4, options);
+    const alterTriggerQuantity =
+      result5.data.items[0].column_values[0].text || 0;
+
     const result3 = await monday.api(query2, options);
     const currentStock = result3.data.items[0].column_values[0].text;
     const result4 = await monday.api(query3, options);
@@ -116,9 +122,13 @@ export async function updateSubitem(data: any) {
 
     const newQuantity = parseInt(currentStock, 10) + quantity.checkin;
     const newCheckOut = parseInt(currentCheckedOut, 10) - quantity.checkin;
-    const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${sku}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\"}\") { id }}`;
-    const result5 = await monday.api(mutation2, options);
-    console.log("result5", result5);
+
+    const newStockBeforeRestock =
+      newQuantity - parseInt(alterTriggerQuantity, 10);
+    console.log("newStockBeforeRestock", newStockBeforeRestock);
+    const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${sku}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\", \\\"numbers67\\\": \\\"${newStockBeforeRestock}\\\"}\") { id }}`;
+    const result6 = await monday.api(mutation2, options);
+    console.log("result6", result6);
     return result1;
   } catch (error) {
     console.log("error", error);
