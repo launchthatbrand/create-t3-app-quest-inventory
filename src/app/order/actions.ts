@@ -34,10 +34,12 @@ export async function deleteOrder(id: number) {
 
 export async function fetchItems() {
   try {
-    const query =
+    const query1 =
       '{ boards (ids: 5798486455) { items_page (limit: 500 , query_params: {order_by:[{column_id:"name"}]}) { items { id name group { title id } assets { id public_url }} } } }';
-    const result = await monday.api(query, options);
-    // console.log("fetchItems", result);
+    const query2 =
+      '{ boards (ids: 5798486455) { items_page (limit: 500, query_params: {order_by:[{column_id:"name"}], rules: [{column_id: "numbers5", compare_value: [0], operator: greater_than}], operator: and }) { items { id name group { title id } assets { id public_url }} } } }';
+    const result = await monday.api(query2, options);
+    console.log("fetchItems", result);
     return result;
   } catch (error) {
     console.log("error", error);

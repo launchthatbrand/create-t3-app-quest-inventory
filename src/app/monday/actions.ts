@@ -56,7 +56,7 @@ export async function saveFormResponse(values: string) {
   }
 }
 
-export async function updateFormResponse(values: string) {
+export async function updateFormResponse(orderId: number, values: string) {
   console.log("updateFormResponse", values);
   const data = JSON.parse(values);
   const mondayItemId = data.MondayItemId;
@@ -72,6 +72,11 @@ export async function updateFormResponse(values: string) {
     // Step 3: update quantity field on Inventory board
 
     // Step 4: update database
+    const updateWithMondayData =
+      await api.formResponse.updateWithMondayData.mutate({
+        id: orderId,
+        status: "checkin",
+      });
 
     // const result3 = await updateInventoryItemQuantity();
   } catch (error) {}

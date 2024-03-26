@@ -69,6 +69,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 export interface FormProps {
   data?: string | null;
   type: "in" | "out";
+  orderId?: number;
   categories?: Category[];
   events?: GroupedEvents | undefined;
   locations?: unknown;
@@ -101,6 +102,7 @@ function enforceMinMax(el) {
 export function DefaultForm({
   data,
   type,
+  orderId,
   categories,
   events,
   locations,
@@ -214,7 +216,8 @@ export function DefaultForm({
     if (!checkin) {
       const result = await saveFormResponse(jsonValues);
     } else {
-      const result = await updateFormResponse(jsonValues);
+      const result = await updateFormResponse(orderId, jsonValues);
+      router.push("/");
     }
 
     form.reset();

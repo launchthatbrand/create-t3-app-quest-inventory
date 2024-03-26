@@ -31,7 +31,7 @@ export default function RootLayout({
           <NextTopLoader />
           <Header />
 
-          <main className="flex flex-1 flex-col items-center justify-center py-32 text-white">
+          <main className="flex flex-1 flex-col items-center justify-center py-48 text-white">
             {children}
           </main>
           <Toaster />
