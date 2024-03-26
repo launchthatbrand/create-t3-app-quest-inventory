@@ -19,9 +19,7 @@ export type orderType = inferProcedureOutput<
 >;
 
 export default function OrderPage({}: Props) {
-  const { data, isLoading } = api.formResponse.getOrdersByUserId.useQuery({
-    userId: "72c73f99-1ba1-4aeb-8769-8bb3b159132d",
-  });
+  const { data, isLoading } = api.formResponse.getUsersOrders.useQuery();
   console.log("data", data);
 
   // const [data, setData] = useState<orderType>([]);

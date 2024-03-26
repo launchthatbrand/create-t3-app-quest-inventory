@@ -32,9 +32,13 @@ export default function LoginForm() {
   const router = useRouter();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
+    // defaultValues: {
+    //   email: "dev1@gmail.com",
+    //   password: "dev1234$",
+    // },
     defaultValues: {
-      email: "dev1@gmail.com",
-      password: "dev1234$",
+      email: "",
+      password: "",
     },
   });
 

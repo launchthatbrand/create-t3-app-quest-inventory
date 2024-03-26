@@ -1,4 +1,8 @@
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 
 import { InventoryFormData } from "~/app/_components/DefaultForm";
 import { eq } from "drizzle-orm";
@@ -14,7 +18,7 @@ export const formResponseRouter = createTRPCRouter({
         .values({
           data: input.data,
           createdById: input.createdById,
-          status: "checkout"
+          status: "checkout",
         })
         .returning();
 
@@ -54,15 +58,13 @@ export const formResponseRouter = createTRPCRouter({
       orderBy: (formResponses, { desc }) => [desc(formResponses.createdAt)],
     });
   }),
-  getOrdersByUserId: publicProcedure
-    .input(z.object({ userId: z.string() }))
-    .query(({ ctx, input }) => {
-      return ctx.db.query.formResponses.findMany({
-        where:
-          eq(formResponses.createdById, input.userId) &&
-          eq(formResponses.status, "checkout"),
-      });
-    }),
+  getUsersOrders: protectedProcedure.query(({ ctx }) => {
+    return ctx.db.query.formResponses.findMany({
+      where:
+        eq(formResponses.createdById, ctx.session.user.id) &&
+        eq(formResponses.status, "checkout"),
+    });
+  }),
   deleteResponse: publicProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
