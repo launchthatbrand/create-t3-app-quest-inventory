@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/popover";
 import React, { useEffect, useState } from "react";
 import { TbCaretUpDownFilled, TbTrashX } from "react-icons/tb";
+import { saveFormResponse, updateFormResponse } from "../monday/actions";
 import { useFieldArray, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { Textarea } from "./ui/textarea";
 import { cn } from "@/lib/utils";
-import { saveFormResponse } from "../monday/actions";
 import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
@@ -85,51 +85,6 @@ export interface Event {
   title: string;
 }
 
-const formSchema = z.object({
-  event: z.object({
-    id: z.string({
-      required_error: "Please select an Event.",
-    }),
-    name: z.string({
-      required_error: "Please select an Event.",
-    }),
-  }),
-  location: z.object({
-    id: z.string({
-      required_error: "Please select an Event.",
-    }),
-    name: z.string({
-      required_error: "Please select an Event.",
-    }),
-  }),
-  items: z.array(
-    z.object({
-      categories: z.object({
-        id: z.string({
-          required_error: "Please select an Event.",
-        }),
-        title: z.string({
-          required_error: "Please select an Event.",
-        }),
-      }),
-      id: z.string({
-        required_error: "Please select an Event.",
-      }),
-      name: z.string({
-        required_error: "Please select an Event.",
-      }),
-      desc: z.string().optional(),
-      quantity: z.object({
-        checkout: z.coerce.number({
-          required_error: "Please select an Event.",
-        }),
-        checkin: z.coerce.number({
-          required_error: "Please select an Event.",
-        }),
-      }),
-    }),
-  ),
-});
 export type InventoryFormData = z.infer<typeof formSchema>;
 
 function enforceMinMax(el) {
@@ -163,6 +118,65 @@ export function DefaultForm({
   const checkin = type === "in";
   const eventsArray = events ? Object.values(events) : undefined;
 
+  // Define Form Schemas
+  const baseItemSchema = z.object({
+    categories: z.object({
+      id: z.string({ required_error: "Please select an Event." }),
+      title: z.string({ required_error: "Please select an Event." }),
+    }),
+    id: z.string({ required_error: "Please select an Event." }),
+    name: z.string({ required_error: "Please select an Event." }),
+    desc: z.string().optional(),
+    // Define quantity with only checkout as required
+    quantity: z.object({
+      checkout: z.coerce.number({
+        required_error: "Please specify a quantity.",
+      }),
+      // Initially, do not make checkin required
+      checkin: z.coerce.number().optional(),
+    }),
+  });
+
+  const checkinItemSchema = baseItemSchema.extend({
+    itemId: z.string({ required_error: "Item ID is required." }),
+    quantity: baseItemSchema.shape.quantity.extend({
+      checkin: z.coerce.number({
+        required_error: "Please specify a check-in quantity.",
+      }),
+    }),
+  });
+
+  const baseFormSchema = z.object({
+    event: z.object({
+      id: z.string({
+        required_error: "Please select an Event.",
+      }),
+      name: z.string({
+        required_error: "Please select an Event.",
+      }),
+    }),
+    location: z.object({
+      id: z.string({
+        required_error: "Please select an Event.",
+      }),
+      name: z.string({
+        required_error: "Please select an Event.",
+      }),
+    }),
+    items: baseItemSchema,
+    MondayItemId: z.string().optional(),
+  });
+
+  const fullFormSchema = getFullFormSchema(checkin);
+
+  function getFullFormSchema(checkin: boolean) {
+    const itemSchema = checkin ? checkinItemSchema : baseItemSchema;
+    // Use `.extend()` to add the `items` part dynamically
+    return baseFormSchema.extend({
+      items: z.array(itemSchema),
+    });
+  }
+
   // Handler to open or close popovers
   const handleOpenChange = (popoverId: string) => {
     setOpenPopover((current) => (current === popoverId ? null : popoverId));
@@ -170,7 +184,7 @@ export function DefaultForm({
 
   //  Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(fullFormSchema),
     defaultValues: {
       event: {},
       items: [],
@@ -200,6 +214,7 @@ export function DefaultForm({
     if (!checkin) {
       const result = await saveFormResponse(jsonValues);
     } else {
+      const result = await updateFormResponse(jsonValues);
     }
 
     form.reset();
@@ -221,7 +236,6 @@ export function DefaultForm({
           <code className="text-white">
             {JSON.stringify(formData, null, 2)}
           </code>
-          w
         </pre>
       ),
     });
@@ -464,7 +478,7 @@ export function DefaultForm({
             )}
           />
 
-          <Accordion type="multiple" collapsible className="w-full">
+          <Accordion type="multiple" className="w-full">
             <div className="space-y-3">
               {itemFields.map((field, index) => (
                 <div
@@ -737,7 +751,6 @@ export function DefaultForm({
                                       type="number"
                                       min={0}
                                       max={checkoutQuantity}
-                                      placeholder={1}
                                       disabled={
                                         !form.watch(`items.${index}.categories`)
                                       }
@@ -793,13 +806,12 @@ export function DefaultForm({
 
           {!checkin && (
             <Button
-              className="self-end"
+              className="w-full self-end"
               type="button"
               onClick={() =>
                 append({
                   quantity: {
                     checkout: 1,
-                    checkin: 1,
                   },
                 })
               }

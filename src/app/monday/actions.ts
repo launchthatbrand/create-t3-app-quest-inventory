@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -25,7 +27,7 @@ export async function saveFormResponse(values: string) {
   try {
     // Step 1: Save the form response to the database
     const dbData = await saveToDatabase(values);
-    console.log("saveFormResponse_server", dbData);
+    // console.log("saveFormResponse_server", dbData);
     if (!dbData) return;
 
     // Step 2: Create Monday Item and SubItems
@@ -39,11 +41,14 @@ export async function saveFormResponse(values: string) {
 
     // Step 3: Update Database again
 
-    const updateResponse = await api.formResponse.updateWithMondayData.mutate({
-      id: dbData.id,
-      mondayItemId: MondayItemId,
-      data: updatedFormData,
-    });
+    const updateWithMondayData =
+      await api.formResponse.updateWithMondayData.mutate({
+        id: dbData.id,
+        mondayItemId: MondayItemId,
+        data: updatedFormData,
+      });
+
+    console.log("updateWithMondayData", updateWithMondayData);
   } catch (error) {
     console.log("Error saving to database", error);
     // Handle this error specifically, maybe return or throw a custom error
@@ -51,7 +56,85 @@ export async function saveFormResponse(values: string) {
   }
 }
 
-export async function updateFormResponse(values: string) {}
+export async function updateFormResponse(values: string) {
+  console.log("updateFormResponse", values);
+  const data = JSON.parse(values);
+  const mondayItemId = data.MondayItemId;
+  try {
+    // Step 1: Change item status to checkin
+
+    const result1 = await checkinOrder(mondayItemId);
+
+    // Step 2: Change checkin quantity on subitems
+
+    const result2 = await changeSubitemQuantity(data);
+
+    // Step 3: update quantity field on Inventory board
+
+    // const result3 = await updateInventoryItemQuantity();
+  } catch (error) {}
+}
+
+export async function checkinOrder(id: string) {
+  console.log("checkinOrder_init", id);
+  try {
+    const mutation = `mutation { change_simple_column_value (board_id: 6309440166, item_id: \"${id}\", column_id:\"status\", value: \"1\") { id }}`;
+    const updateMondayOrder = await monday.api(mutation, options);
+    console.log("updateMondayOrder", updateMondayOrder);
+    return updateMondayOrder;
+  } catch (error) {}
+}
+
+export async function changeSubitemQuantity(data: any) {
+  const updatedItems = await Promise.all(
+    data.items.map(async (item: any) => {
+      const itemId = await updateSubitem(item); // Your function to create an item on Monday
+      return { ...item }; // Append the itemId to the item
+    }),
+  );
+}
+
+export async function updateSubitem(data: any) {
+  try {
+    const { itemId, quantity } = data;
+    console.log("updateSubitem_id", itemId);
+    const mutation1 = `mutation { change_simple_column_value (board_id: 6314721404, item_id: \"${itemId}\", column_id:\"numbers2\", value: \"${quantity.checkin}\") { id }}`;
+    const result1 = await monday.api(mutation1, options);
+
+    const query1 = `query { items (ids: \"${itemId}\") { column_values (ids: [\"text\"]) { text }} }`;
+    const result2 = await monday.api(query1, options);
+    const sku = result2.data.items[0].column_values[0].text;
+
+    const query2 = `query { items (ids: \"5798486851\") { column_values (ids: [\"numbers5\"]) { text }} }`;
+    const query3 = `query { items (ids: \"5798486851\") { column_values (ids: [\"numbers\"]) { text }} }`;
+    const result3 = await monday.api(query2, options);
+    const currentStock = result3.data.items[0].column_values[0].text;
+    const result4 = await monday.api(query3, options);
+    const currentCheckedOut = result4.data.items[0].column_values[0].text;
+
+    const newQuantity = parseInt(currentStock, 10) + quantity.checkin;
+    const newCheckOut = parseInt(currentCheckedOut, 10) - quantity.checkin;
+    const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${sku}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\"}\") { id }}`;
+    const result5 = await monday.api(mutation2, options);
+    console.log("result5", result5);
+    return result1;
+  } catch (error) {
+    console.log("error", error);
+  }
+}
+
+export async function updateInventoryColumn(data: any) {
+  try {
+    const { itemId, quantity } = data;
+    console.log("updateSubitem_id", itemId);
+    const mutation = `mutation { change_simple_column_value (board_id: 6314721404, item_id: \"${itemId}\", column_id:\"numbers2\", value: \"${quantity.checkin}\") { id }}`;
+    const result = await monday.api(mutation, options);
+    console.log("updateSubitem_end", result);
+    return result;
+  } catch (error) {
+    console.log("error", error);
+  }
+}
 
 export async function readUserSession() {
   const supabase = await supabaseServer();
@@ -95,10 +178,11 @@ export async function createMondayItem(
     const createMondayItemResult = await monday.api(mutation, options);
     const createMondayItemId = createMondayItemResult.data.create_item.id;
 
-    console.log("createMondayItemId", createMondayItemId);
+    // Insert the createMondayItemId into formData
+    formData.MondayItemId = createMondayItemId;
 
     const updatedItems = await Promise.all(
-      formData.items.map(async (item) => {
+      formData.items.map(async (item: any) => {
         const itemId = await createSubitem(
           item,
           createMondayItemResult.data.create_item.id,
@@ -109,7 +193,6 @@ export async function createMondayItem(
 
     // Update the formData with the updated items
     const updatedFormData = { ...formData, items: updatedItems };
-    console.log("");
 
     return { createMondayItemId, updatedFormData };
 
@@ -127,10 +210,10 @@ export async function createMondayItem(
   }
 }
 
-export async function updateFormDataInDatabase(
-  databaseId: number,
-  updatedFormData: JsonObject,
-) {}
+// export async function updateFormDataInDatabase(
+//   databaseId: number,
+//   updatedFormData: JsonObject,
+// ) {}
 
 export async function createSubitem(
   data: InventoryFormData["items"][number],
@@ -141,13 +224,6 @@ export async function createSubitem(
     const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: \"${name}\", column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text_1\\\": \\\"${id}\\\" }\") { id board { id } } }`;
     const result = await monday.api(mutation, options);
     return result.data.create_subitem.id;
-  } catch (error) {
-    console.log("error", error);
-  }
-}
-
-export async function checkinOrder() {
-  try {
   } catch (error) {
     console.log("error", error);
   }

@@ -17,6 +17,9 @@ const config = {
       {
         hostname: "files-monday-com.s3.amazonaws.com",
       },
+      {
+        hostname: "fdotwww.blob.core.windows.net",
+      },
     ],
   },
 };

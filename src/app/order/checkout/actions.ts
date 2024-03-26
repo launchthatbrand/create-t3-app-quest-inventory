@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 "use server";
 
 import { type APIOptions } from "monday-sdk-js/types/client-api.interface";

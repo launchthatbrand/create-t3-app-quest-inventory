@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Table,
   TableBody,
@@ -69,7 +75,8 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
           {data?.map((item, index) => {
             const parsedData = JSON.parse(item.data!) as InventoryFormData;
             const totalCheckoutQuantity = parsedData.items.reduce(
-              (total, currentItem) => total + currentItem.quantity.checkout,
+              (total: any, currentItem: any) =>
+                total + currentItem.quantity.checkout,
               0,
             );
 

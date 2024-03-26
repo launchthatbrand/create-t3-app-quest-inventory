@@ -95,8 +95,6 @@ export async function fetchEvents() {
     const result1 = (await monday.api(query, options)) as Events;
     // console.log("result1", result1);
     const result2 = result1.data.items_page_by_column_values.items;
-    const result3 = result2[0];
-    console.log("result3", result3);
 
     const groupedData = result2.reduce<GroupedEvents>((acc, item) => {
       // Use the group id as the key for each group
