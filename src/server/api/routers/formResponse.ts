@@ -14,6 +14,7 @@ export const formResponseRouter = createTRPCRouter({
         .values({
           data: input.data,
           createdById: input.createdById,
+          status: "checkout"
         })
         .returning();
 
@@ -23,8 +24,9 @@ export const formResponseRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.number(),
-        mondayItemId: z.string(),
-        data: z.string().min(1),
+        mondayItemId: z.string().optional(),
+        data: z.string().optional(),
+        status: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -33,6 +35,7 @@ export const formResponseRouter = createTRPCRouter({
         .set({
           mondayItemId: input.mondayItemId,
           data: input.data,
+          status: input.status,
         })
         .where(eq(formResponses.id, input.id))
         .returning();
@@ -55,7 +58,9 @@ export const formResponseRouter = createTRPCRouter({
     .input(z.object({ userId: z.string() }))
     .query(({ ctx, input }) => {
       return ctx.db.query.formResponses.findMany({
-        where: eq(formResponses.createdById, input.userId),
+        where:
+          eq(formResponses.createdById, input.userId) &&
+          eq(formResponses.status, "checkout"),
       });
     }),
   deleteResponse: publicProcedure

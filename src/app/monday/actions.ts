@@ -71,6 +71,8 @@ export async function updateFormResponse(values: string) {
 
     // Step 3: update quantity field on Inventory board
 
+    // Step 4: update database
+
     // const result3 = await updateInventoryItemQuantity();
   } catch (error) {}
 }

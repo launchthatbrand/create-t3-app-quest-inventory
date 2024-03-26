@@ -44,6 +44,7 @@ export const formResponses = createTable("formResponses", {
   updatedAt: timestamp("updatedAt"),
   createdById: varchar("createdById", { length: 255 }).notNull(),
   mondayItemId: varchar("mondayItemId", { length: 256 }),
+  status: varchar("status", { length: 256 }),
 });
 
 export const authSchema = pgSchema("auth");
