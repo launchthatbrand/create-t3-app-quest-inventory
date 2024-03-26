@@ -106,7 +106,7 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
                           )
                         }
                       >
-                        Copy payment ID
+                        Copy order ID
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -114,11 +114,11 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
                       >
                         Check In Order
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => e.preventDefault()}>
+                      {/* <DropdownMenuItem onClick={(e) => e.preventDefault()}>
                         <AlertDialog>
                           <AlertDialogTrigger>
                             Delete Order
-                            {/* <Button variant="ghost">Show Dialog</Button> */}
+                            
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -140,7 +140,7 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
