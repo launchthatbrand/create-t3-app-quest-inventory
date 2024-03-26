@@ -107,8 +107,8 @@ export async function updateSubitem(data: any) {
     const result2 = await monday.api(query1, options);
     const sku = result2.data.items[0].column_values[0].text;
 
-    const query2 = `query { items (ids: \"5798486851\") { column_values (ids: [\"numbers5\"]) { text }} }`;
-    const query3 = `query { items (ids: \"5798486851\") { column_values (ids: [\"numbers\"]) { text }} }`;
+    const query2 = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers5\"]) { text }} }`;
+    const query3 = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers\"]) { text }} }`;
     const result3 = await monday.api(query2, options);
     const currentStock = result3.data.items[0].column_values[0].text;
     const result4 = await monday.api(query3, options);
@@ -223,8 +223,38 @@ export async function createSubitem(
 ) {
   try {
     const { name, id, quantity } = data;
-    const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: \"${name}\", column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text_1\\\": \\\"${id}\\\" }\") { id board { id } } }`;
+    const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: \"${name}\", column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text\\\": \\\"${id}\\\" }\") { id board { id } } }`;
     const result = await monday.api(mutation, options);
+
+    const query2 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers5\"]) { text }} }`;
+    const query3 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers\"]) { text }} }`;
+    const query4 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers6\"]) { text }} }`;
+
+    const result3 = await monday.api(query2, options);
+    const currentStock = result3.data.items[0].column_values[0].text;
+    console.log("currentStock", currentStock);
+    const result4 = await monday.api(query3, options);
+    const currentCheckedOut = result4.data.items[0].column_values[0].text || 0;
+    const result5 = await monday.api(query4, options);
+    const alterTriggerQuantity =
+      result5.data.items[0].column_values[0].text || 0;
+
+    console.log("currentCheckedOut", currentCheckedOut);
+
+    const alterTriggerQuantityNum = parseInt(alterTriggerQuantity, 10);
+
+    const newQuantity = parseInt(currentStock, 10) - quantity.checkout;
+    console.log("newQuantity", newQuantity);
+    console.log("alterTriggerQuantityNum", alterTriggerQuantityNum);
+    const newCheckOut = parseInt(currentCheckedOut, 10) + quantity.checkout;
+    const newStockBeforeRestock =
+      newQuantity - parseInt(alterTriggerQuantity, 10);
+    console.log("newStockBeforeRestock", newStockBeforeRestock);
+
+    const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${id}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\", \\\"numbers67\\\": \\\"${newStockBeforeRestock}\\\"}\") { id }}`;
+    const result6 = await monday.api(mutation2, options);
+    console.log("result6", result6);
+
     return result.data.create_subitem.id;
   } catch (error) {
     console.log("error", error);

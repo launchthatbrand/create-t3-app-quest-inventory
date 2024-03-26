@@ -13,7 +13,6 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-
 import {
   Sheet,
   SheetClose,
@@ -25,10 +24,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-import Link from "next/link";
-import { cn } from "~/lib/utils";
 import { Button } from "./ui/button";
+import Link from "next/link";
 import { MenuIcon } from "lucide-react";
+import { cn } from "~/lib/utils";
 
 export default function NavigationMenuDemo() {
   const [sheetOpen, setSheetOpen] = React.useState(false);
@@ -38,6 +37,13 @@ export default function NavigationMenuDemo() {
         <NavigationMenu>
           <NavigationMenuList>
             <NavigationMenuItem>
+              <Link href="/" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Home
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            {/* <NavigationMenuItem>
               <Link href="/demo" legacyBehavior passHref>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                   Demo Page
@@ -77,7 +83,7 @@ export default function NavigationMenuDemo() {
                   Logout
                 </NavigationMenuLink>
               </Link>
-            </NavigationMenuItem>
+            </NavigationMenuItem> */}
           </NavigationMenuList>
         </NavigationMenu>
       </div>

@@ -11,7 +11,7 @@ function Header() {
           <Logo />
         </div>
         <div className="flex items-center space-x-10">
-          {/* <TopNavbar /> */}
+          <TopNavbar />
           {/* <AuthButton /> */}
         </div>
       </div>
