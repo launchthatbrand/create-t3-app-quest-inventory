@@ -59,13 +59,13 @@ export default function LoginForm() {
       });
     } else {
       toast({
-        title: "Sucessfully Logged In:",
-        description: (
-          <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-            Sucessfully Registered:
-            <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-          </pre>
-        ),
+        title: "Sucessfully Logged In!",
+        // description: (
+        //   <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+        //     Sucessfully Registered:
+        //     <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+        //   </pre>
+        // ),
       });
       router.push("/");
     }

@@ -127,7 +127,12 @@ export function DefaultForm({
       title: z.string({ required_error: "Please select an Event." }),
     }),
     id: z.string({ required_error: "Please select an Event." }),
-    name: z.string({ required_error: "Please select an Event." }),
+    name: z
+      .string({
+        required_error: "Please select an Event.",
+        invalid_type_error: "Name must be a string",
+      })
+      .min(1, { message: "Checkin quantity should be at least 1" }),
     desc: z.string().optional(),
     // Define quantity with only checkout as required
     quantity: z.object({
@@ -140,11 +145,16 @@ export function DefaultForm({
   });
 
   const checkinItemSchema = baseItemSchema.extend({
-    itemId: z.string({ required_error: "Item ID is required." }),
+    // MondayitemId: z.string({ required_error: "Monday Item ID is required." }),
     quantity: baseItemSchema.shape.quantity.extend({
-      checkin: z.coerce.number({
-        required_error: "Please specify a check-in quantity.",
-      }),
+      checkin: z.coerce
+        .number({
+          required_error: "Checkin quantity is required",
+          invalid_type_error: "Checkin quantity must be a number",
+        })
+        .int()
+        .positive()
+        .min(1, { message: "Checkin quantity should be at least 1" }),
     }),
   });
 
@@ -190,6 +200,7 @@ export function DefaultForm({
     defaultValues: {
       event: {},
       items: [],
+      quantity: {},
     },
   });
 
@@ -263,12 +274,11 @@ export function DefaultForm({
   }
 
   function onDelete(index: number) {
-    console.log("onDeleteIndex", index);
+    // console.log("onDeleteIndex", index);
     // Save it!
-    console.log("form submitted", index);
     remove(index);
     toast({
-      title: "Sucessfully Deleted Item:",
+      title: `Sucessfully Removed Item: ${index}`,
     });
   }
 
@@ -580,111 +590,118 @@ export function DefaultForm({
                       <FormField
                         control={form.control}
                         name={`items.${index}`}
-                        render={({ field }) => (
-                          <FormItem className="flex w-[100%] flex-col">
-                            <FormLabel>Product</FormLabel>
+                        render={({ field }) => {
+                          console.log("item_value", field.value);
+                          return (
+                            <FormItem className="flex w-[100%] flex-col">
+                              <FormLabel>Product</FormLabel>
 
-                            <Popover
-                              open={openPopover === `${field.name}`}
-                              onOpenChange={() =>
-                                handleOpenChange(`${field.name}`)
-                              }
-                            >
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    className={cn(
-                                      "w-full justify-between",
-                                      !field.value && "text-muted-foreground",
-                                    )}
-                                    disabled={
-                                      !form.watch(
-                                        `items.${index}.categories`,
-                                      ) || checkin
-                                    }
+                              <Popover
+                                open={openPopover === `${field.name}`}
+                                onOpenChange={() =>
+                                  handleOpenChange(`${field.name}`)
+                                }
+                              >
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className={cn(
+                                        "w-full justify-between",
+                                        !field.value && "text-muted-foreground",
+                                      )}
+                                      disabled={
+                                        !form.watch(
+                                          `items.${index}.categories`,
+                                        ) || checkin
+                                      }
+                                    >
+                                      {field.value.name
+                                        ? field.value.name
+                                        : !form.watch(
+                                              `items.${index}.categories`,
+                                            )
+                                          ? "Select a category first"
+                                          : "Select Product"}
+
+                                      <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                  <Command
+                                  // filter={(value, search) => {
+                                  //   if (value.includes(search)) return 1;
+                                  //   return 0;
+                                  // }}
                                   >
-                                    {field.value.name
-                                      ? field.value.name
-                                      : !form.watch(`items.${index}.categories`)
-                                        ? "Select a category first"
-                                        : "Select Product"}
+                                    <CommandInput
+                                      placeholder="Search products..."
+                                      className="h-9"
+                                    />
+                                    <CommandList>
+                                      <CommandEmpty>
+                                        No products found.
+                                      </CommandEmpty>
+                                      <ScrollArea className="h-[300px]">
+                                        <CommandGroup>
+                                          {filteredItems.map((item) => (
+                                            <CommandItem
+                                              value={item.name}
+                                              // value={item.name.replace(
+                                              //   /"/g,
+                                              //   '\\"',
+                                              // )}
+                                              key={item.id}
+                                              className="text-base font-medium"
+                                              onSelect={() => {
+                                                form.setValue(
+                                                  `items.${index}.name`,
+                                                  item.name,
+                                                );
+                                                form.setValue(
+                                                  `items.${index}.id`,
+                                                  item.id,
+                                                );
+                                                setOpenPopover(false);
+                                              }}
+                                            >
+                                              <div className="flex items-center gap-x-5">
+                                                <Image
+                                                  className="min-w-[120px]"
+                                                  src={
+                                                    item.assets[0]
+                                                      ?.public_url ??
+                                                    "https://static.thenounproject.com/png/261694-200.png"
+                                                  }
+                                                  alt="product image"
+                                                  width={100}
+                                                  height={100}
+                                                />
+                                                {item.name}
+                                              </div>
 
-                                    <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                                <Command
-                                // filter={(value, search) => {
-                                //   if (value.includes(search)) return 1;
-                                //   return 0;
-                                // }}
-                                >
-                                  <CommandInput
-                                    placeholder="Search products..."
-                                    className="h-9"
-                                  />
-                                  <CommandList>
-                                    <CommandEmpty>
-                                      No products found.
-                                    </CommandEmpty>
-                                    <ScrollArea className="h-[300px]">
-                                      <CommandGroup>
-                                        {filteredItems.map((item) => (
-                                          <CommandItem
-                                            value={item.name.replace(
-                                              /"/g,
-                                              '\\"',
-                                            )}
-                                            key={item.id}
-                                            className="text-base font-medium"
-                                            onSelect={() => {
-                                              form.setValue(
-                                                `items.${index}.name`,
-                                                item.name,
-                                              );
-                                              form.setValue(
-                                                `items.${index}.id`,
-                                                item.id,
-                                              );
-                                              setOpenPopover(false);
-                                            }}
-                                          >
-                                            <div className="flex items-center gap-x-5">
-                                              <Image
-                                                className="min-w-[120px]"
-                                                src={
-                                                  item.assets[0]?.public_url ??
-                                                  "https://static.thenounproject.com/png/261694-200.png"
-                                                }
-                                                alt="product image"
-                                                width={100}
-                                                height={100}
+                                              <CheckIcon
+                                                className={cn(
+                                                  "ml-auto h-4 w-4",
+                                                  item.id === field.value?.id
+                                                    ? "opacity-100"
+                                                    : "opacity-0",
+                                                )}
                                               />
-                                              {item.name}
-                                            </div>
-
-                                            <CheckIcon
-                                              className={cn(
-                                                "ml-auto h-4 w-4",
-                                                item.id === field.value?.id
-                                                  ? "opacity-100"
-                                                  : "opacity-0",
-                                              )}
-                                            />
-                                          </CommandItem>
-                                        ))}
-                                      </CommandGroup>
-                                    </ScrollArea>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                                            </CommandItem>
+                                          ))}
+                                        </CommandGroup>
+                                      </ScrollArea>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
                       <FormField
                         control={form.control}
@@ -711,6 +728,7 @@ export function DefaultForm({
                         <FormField
                           control={form.control}
                           name={`items.${index}.quantity.checkout`}
+                          defaultValue={0}
                           render={({ field }) => (
                             <FormItem className="space-y-1">
                               <FormLabel>Checkout Quantity</FormLabel>
@@ -738,6 +756,7 @@ export function DefaultForm({
                           <FormField
                             control={form.control}
                             name={`items.${index}.quantity.checkin`}
+                            defaultValue={0}
                             render={({ field }) => {
                               const checkoutQuantity = form.watch(
                                 `items.${index}.quantity.checkout`,
@@ -752,6 +771,7 @@ export function DefaultForm({
                                     <Input
                                       {...field}
                                       type="number"
+                                      placeholder={0}
                                       min={0}
                                       max={checkoutQuantity}
                                       disabled={
@@ -780,8 +800,7 @@ export function DefaultForm({
                               </AlertDialogTitle>
                               <AlertDialogDescription>
                                 This action cannot be undone. This will
-                                permanently delete your account and remove your
-                                data from our servers.
+                                permanently delete the item from the order.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

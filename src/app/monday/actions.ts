@@ -238,7 +238,8 @@ export async function createSubitem(
 ) {
   try {
     const { name, id, quantity } = data;
-    const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: \"${name}\", column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text\\\": \\\"${id}\\\" }\") { id board { id } } }`;
+    console.log("item name", name);
+    const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: ${JSON.stringify(name)}, column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text\\\": \\\"${id}\\\" }\") { id board { id } } }`;
     const result = await monday.api(mutation, options);
 
     const query2 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers5\"]) { text }} }`;
