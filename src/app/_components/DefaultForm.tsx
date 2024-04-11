@@ -241,17 +241,17 @@ export function DefaultForm({
 
     //Show Toast
     toast({
-      title: "Sucessfully Submitted",
-      description: (
-        // <div className="min-h-[150px]">{/* <ConfettiComponent /> */}</div>
+      title: checkin ? "Sucessfully Checked In" : "Sucessfully Checked Out",
+      // description: (
+      //   // <div className="min-h-[150px]">{/* <ConfettiComponent /> */}</div>
 
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          Sucessfully Submitted:
-          <code className="text-white">
-            {JSON.stringify(formData, null, 2)}
-          </code>
-        </pre>
-      ),
+      //   <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+      //     Sucessfully Submitted:
+      //     <code className="text-white">
+      //       {JSON.stringify(formData, null, 2)}
+      //     </code>
+      //   </pre>
+      // ),
     });
   }
   async function onSubmit(values: z.infer<typeof formSchema>) {
