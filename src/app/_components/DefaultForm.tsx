@@ -531,7 +531,7 @@ export function DefaultForm({
                                     className="h-9"
                                   />
                                   <CommandEmpty>
-                                    No framework found.
+                                    No categories found.
                                   </CommandEmpty>
                                   <ScrollArea className="h-[200px]">
                                     <CommandList>
@@ -617,10 +617,10 @@ export function DefaultForm({
                               </PopoverTrigger>
                               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                 <Command
-                                  filter={(value, search) => {
-                                    if (value.includes(search)) return 1;
-                                    return 0;
-                                  }}
+                                // filter={(value, search) => {
+                                //   if (value.includes(search)) return 1;
+                                //   return 0;
+                                // }}
                                 >
                                   <CommandInput
                                     placeholder="Search products..."
@@ -834,8 +834,8 @@ export function DefaultForm({
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  order.
+                  This will submit the order. Please double check the order is
+                  correct before continuing.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
