@@ -146,16 +146,21 @@ export function DefaultForm({
 
   const checkinItemSchema = baseItemSchema.extend({
     // MondayitemId: z.string({ required_error: "Monday Item ID is required." }),
-    quantity: baseItemSchema.shape.quantity.extend({
-      checkin: z.coerce
-        .number({
-          required_error: "Checkin quantity is required",
-          invalid_type_error: "Checkin quantity must be a number",
-        })
-        .int()
-        .positive()
-        .min(1, { message: "Checkin quantity should be at least 1" }),
-    }),
+    quantity: baseItemSchema.shape.quantity
+      .extend({
+        checkin: z.coerce
+          .number({
+            required_error: "Checkin quantity is required",
+            invalid_type_error: "Checkin quantity must be a number",
+          })
+          .int()
+          .min(0, { message: "Checkin quantity should be at least 1" }),
+      })
+      .refine((data) => data.checkin <= data.checkout, {
+        message:
+          "Checkin amount must be less than or equal to the checkout amount",
+        path: ["checkin"],
+      }),
   });
 
   const baseFormSchema = z.object({
@@ -726,13 +731,13 @@ export function DefaultForm({
                           </FormItem>
                         )}
                       />
-                      <div className="flex items-end justify-between space-x-5">
+                      <div className="flex items-start justify-between space-x-5">
                         <FormField
                           control={form.control}
                           name={`items.${index}.quantity.checkout`}
                           defaultValue={0}
                           render={({ field }) => (
-                            <FormItem className="space-y-1">
+                            <FormItem className="w-1/2 space-y-1">
                               <FormLabel>Checkout Quantity</FormLabel>
                               <FormDescription>
                                 Total items checked out.
@@ -764,7 +769,7 @@ export function DefaultForm({
                                 `items.${index}.quantity.checkout`,
                               );
                               return (
-                                <FormItem className="space-y-1">
+                                <FormItem className="w-1/2 space-y-1">
                                   <FormLabel>Checkin Quantity</FormLabel>
                                   <FormDescription>
                                     Total items checked in.
@@ -791,7 +796,7 @@ export function DefaultForm({
                         <AlertDialog>
                           <AlertDialogTrigger
                             disabled={checkin}
-                            className="rounded-md bg-red-700 p-2 text-white shadow-md disabled:bg-slate-400"
+                            className="self-end rounded-md bg-red-700 p-2 text-white shadow-md disabled:bg-slate-400"
                           >
                             <TrashIcon className="h-6 w-6" />
                           </AlertDialogTrigger>
