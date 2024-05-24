@@ -81,6 +81,7 @@ export const formResponseRouter = createTRPCRouter({
       where:
         eq(formResponses.createdById, ctx.session.user.id) &&
         eq(formResponses.status, "checkout"),
+      with: { users: true },
     });
   }),
   deleteResponse: publicProcedure

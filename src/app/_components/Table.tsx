@@ -149,7 +149,7 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
               <TableRow key={index}>
                 <TableCell className="font-medium">{item.id}</TableCell>
                 <TableCell className="font-medium">
-                  {item.createdById}
+                  {item.users.firstName} {item.users.lastName}
                 </TableCell>
                 <TableCell className="font-medium">
                   {parsedData.event.name ?? "undefined"}

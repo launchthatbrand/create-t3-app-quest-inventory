@@ -15,7 +15,7 @@ import { readUserSession } from "../(auth)/actions";
 type Props = {};
 
 export type orderType = inferProcedureOutput<
-  AppRouter["formResponse"]["getAll"]
+  AppRouter["formResponse"]["getUsersOrders"]
 >;
 
 export default function OrderPage({}: Props) {
