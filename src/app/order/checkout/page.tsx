@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-export const dynamic = "force-dynamic";
 
 import {
   fetchCategories,
@@ -11,6 +10,8 @@ import {
 
 import { DefaultForm } from "~/app/_components/DefaultForm";
 import React from "react";
+
+export const revalidate = 10;
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 type Props = {};
