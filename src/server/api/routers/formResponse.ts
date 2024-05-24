@@ -46,6 +46,24 @@ export const formResponseRouter = createTRPCRouter({
 
       return newRecord;
     }),
+  changeDocumentOwner: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        userId: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [newRecord] = await ctx.db
+        .update(formResponses)
+        .set({
+          createdById: input.userId,
+        })
+        .where(eq(formResponses.id, input.id))
+        .returning();
+
+      return newRecord;
+    }),
   getFormResponseById: publicProcedure
     .input(z.object({ id: z.number() }))
     .query(({ ctx, input }) => {

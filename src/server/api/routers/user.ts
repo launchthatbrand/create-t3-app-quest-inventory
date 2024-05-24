@@ -12,4 +12,9 @@ export const userRouter = createTRPCRouter({
         where: eq(users.id, input.id),
       });
     }),
+  getAll: publicProcedure.query(({ ctx }) => {
+    return ctx.db.query.users.findMany({
+      orderBy: (users, { desc }) => [desc(users.id)],
+    });
+  }),
 });

@@ -18,9 +18,14 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -34,11 +39,29 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { type orderType } from "../order/page";
 import { Button } from "./ui/button";
-import { MoreHorizontal } from "lucide-react";
+import {
+  Calendar,
+  CheckSquare2Icon,
+  Clipboard,
+  MoreHorizontal,
+  Tags,
+  Trash,
+  User,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { InventoryFormData } from "./DefaultForm";
+import React, { use, useState } from "react";
+import { api } from "~/trpc/react";
 
 interface DefaultTableProps {
   data: orderType;
@@ -47,13 +70,52 @@ interface DefaultTableProps {
 
 export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
   const router = useRouter();
+  const utils = api.useUtils();
 
-  const onDeleteClick = (id: number) => {
-    handleDelete(id);
+  const changeDocumentOwner = api.formResponse.changeDocumentOwner.useMutation({
+    onSuccess: () => {
+      setFormData(null);
+      void utils.formResponse.getUsersOrders.invalidate();
+    },
+  });
+
+  const [formData, setFormData] = useState<{
+    id: number;
+    userId: string;
+  } | null>(null);
+  const [userId, setUserId] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const {
+    data: users,
+    isLoading,
+    error,
+    refetch,
+  } = api.user.getAll.useQuery(undefined, {
+    enabled: false, // Disable automatic query on mount
+  });
+
+  if (users) console.log("users", data);
+
+  // Handler to open or close popovers
+  const handleOpenChange = (popoverId: string) => {
+    setIsDropdownOpen((current) => (current === popoverId ? null : popoverId));
+  };
+
+  // Define a submit handler.
+  async function confirmAndSubmit() {
+    console.log("confirmAndSubmit", formData);
+    const result = await changeDocumentOwner.mutateAsync(formData!);
+    console.log("confirmAndSubmitresult", result);
+  }
+
+  const fetchVolunteers = () => {
+    void refetch(); // Manually trigger the query when the dropdown is clicked
   };
 
   return (
-    <div className="flex w-full flex-col gap-y-3 rounded-md bg-white p-3 text-black md:w-2/5">
+    <div className="flex w-full flex-1 flex-col gap-y-3 rounded-md bg-white p-3 text-black">
       <div className="flex w-full items-center justify-between">
         Past Check-out Orders
         <Button
@@ -63,11 +125,12 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
           New Check-out Order
         </Button>
       </div>
-      <Table>
+      <Table className="md:whitespace-nowrap">
         <TableCaption>A list of your past orders.</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[30%]">Order #</TableHead>
+            <TableHead className="">Order #</TableHead>
+            <TableHead className="">Volunteer</TableHead>
             <TableHead>Event</TableHead>
             <TableHead className="text-center">Total Items</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -86,63 +149,100 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
               <TableRow key={index}>
                 <TableCell className="font-medium">{item.id}</TableCell>
                 <TableCell className="font-medium">
+                  {item.createdById}
+                </TableCell>
+                <TableCell className="font-medium">
                   {parsedData.event.name ?? "undefined"}
                 </TableCell>
                 <TableCell className="text-center font-medium">
                   {totalCheckoutQuantity}
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  <DropdownMenu>
+                  <DropdownMenu
+                    open={isDropdownOpen === `${item.id}`}
+                    onOpenChange={() => handleOpenChange(`${item.id}`)}
+                  >
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-[200px]">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          navigator.clipboard.writeText(
-                            item.id as unknown as string,
-                          )
-                        }
-                      >
-                        Copy order ID
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => router.push(`/order/${item.id}`)}
-                      >
-                        Check In Order
-                      </DropdownMenuItem>
-                      {/* <DropdownMenuItem onClick={(e) => e.preventDefault()}>
-                        <AlertDialog>
-                          <AlertDialogTrigger>
-                            Delete Order
-                            
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Are you absolutely sure?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will
-                                permanently delete the order.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => onDeleteClick(item.id)}
-                              >
-                                Continue
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuItem> */}
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigator.clipboard.writeText(
+                              item.id as unknown as string,
+                            )
+                          }
+                        >
+                          <Clipboard className="mr-2 h-4 w-4" />
+                          Copy order ID
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger
+                            onMouseEnter={fetchVolunteers}
+                          >
+                            <User className="mr-2 h-4 w-4" />
+                            Assign to...
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="p-0">
+                            <Command
+                            // filter={(value, search) => {
+                            //   if (value.includes(search)) return 1;
+                            //   return 0;
+                            // }}
+                            >
+                              <CommandInput
+                                placeholder="Volunteer List..."
+                                autoFocus={true}
+                              />
+                              <CommandList>
+                                {isLoading && (
+                                  <CommandEmpty>Loading...</CommandEmpty>
+                                )}
+                                {error && (
+                                  <CommandEmpty>
+                                    Error fetching users
+                                  </CommandEmpty>
+                                )}
+                                {!isLoading && !error && users && (
+                                  <CommandGroup>
+                                    {users.map((user) => (
+                                      <CommandItem
+                                        key={user.id}
+                                        value={`${user.firstName} ${user.lastName}`}
+                                        onSelect={() => {
+                                          setUserId(user.id);
+                                          setFormData({
+                                            id: item.id,
+                                            userId: user.id,
+                                          });
+                                          setIsDropdownOpen(null);
+                                          setIsModalOpen(true);
+                                        }}
+                                      >
+                                        {user.firstName} {user.lastName}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+                              </CommandList>
+                            </Command>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/order/${item.id}`)}
+                        >
+                          <CheckSquare2Icon className="mr-2 h-4 w-4" />
+                          Check In Order
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -151,6 +251,23 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
           })}
         </TableBody>
       </Table>
+      <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reassign this order to ${formData?.userId}. Are you sure
+              you wish to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAndSubmit}>
+              Reassign Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

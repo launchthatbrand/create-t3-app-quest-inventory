@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { InventoryFormData } from "~/app/_components/DefaultForm";
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -42,10 +42,19 @@ export const formResponses = createTable("formResponses", {
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
   updatedAt: timestamp("updatedAt"),
-  createdById: varchar("createdById", { length: 255 }).notNull(),
+  createdById: uuid("createdById")
+    .notNull()
+    .references(() => users.id),
   mondayItemId: varchar("mondayItemId", { length: 256 }),
   status: varchar("status", { length: 256 }),
 });
+
+export const formResponsesRelations = relations(formResponses, ({ one }) => ({
+  users: one(users, {
+    fields: [formResponses.createdById],
+    references: [users.id],
+  }),
+}));
 
 export const authSchema = pgSchema("auth");
 
