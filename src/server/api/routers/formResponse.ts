@@ -1,3 +1,4 @@
+import { and, eq } from "drizzle-orm";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -5,7 +6,6 @@ import {
 } from "~/server/api/trpc";
 
 import { InventoryFormData } from "~/app/_components/DefaultForm";
-import { eq } from "drizzle-orm";
 import { formResponses } from "~/server/db/schema";
 import { z } from "zod";
 
@@ -78,9 +78,11 @@ export const formResponseRouter = createTRPCRouter({
   }),
   getUsersOrders: protectedProcedure.query(({ ctx }) => {
     return ctx.db.query.formResponses.findMany({
-      where:
-        eq(formResponses.createdById, ctx.session.user.id) &&
+      where: and(
+        eq(formResponses.createdById, ctx.session.user.id),
         eq(formResponses.status, "checkout"),
+      ),
+
       with: { users: true },
     });
   }),
