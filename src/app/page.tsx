@@ -2,10 +2,10 @@ import { CreatePost } from "~/app/_components/create-post";
 import Link from "next/link";
 import { Session } from "@supabase/supabase-js";
 import { api } from "~/trpc/server";
+import { fetchCategories2 } from "./order/checkout/actions";
 import { getServerAuthSession } from "~/server/auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { readUserSession } from "./(auth)/actions";
-import { fetchCategories2 } from "./order/checkout/actions";
 
 export default async function Home() {
   noStore();
@@ -21,7 +21,7 @@ export default async function Home() {
     <main className="flex flex-col items-center justify-center">
       <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
         <h2 className="text-center text-2xl font-extrabold tracking-tight sm:text-[3rem]">
-          B5 Office Of Safety Inventory System
+          D5 Office Of Safety Inventory System
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
           <Link
