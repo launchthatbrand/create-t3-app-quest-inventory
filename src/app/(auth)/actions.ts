@@ -1,5 +1,6 @@
 "use server";
 
+import { createMondayUserItem } from "../monday/actions";
 import supabaseServer from "~/lib/supabase/server";
 
 export async function signInWithEmailAndPassword(data: {
@@ -34,6 +35,10 @@ export async function signUpWithEmailAndPassword(data: {
       },
     },
   });
+
+  if (!result.error) {
+    const result2 = await createMondayUserItem(result);
+  }
 
   return result;
 }

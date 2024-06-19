@@ -15,6 +15,7 @@ import { type AppRouter } from "~/server/api/root";
 import mondaySdk from "monday-sdk-js";
 import { type APIOptions } from "monday-sdk-js/types/client-api.interface";
 import { JsonObject } from "next-auth/adapters";
+import { AuthResponse } from "@supabase/supabase-js";
 
 const monday = mondaySdk();
 monday.setApiVersion("2023-10");
@@ -225,6 +226,12 @@ export async function createMondayItem(
   } catch (error) {
     console.log("error", error);
   }
+}
+
+export async function createMondayUserItem({ data }: AuthResponse) {
+  const mutation = `mutation { create_item (board_id: 6354338796, item_name: \"${data.user?.user_metadata.first_name} ${data.user?.user_metadata.last_name}\", column_values: \"{ \\\"text__1\\\": \\\"${data.user?.email}\\\" }\") { id board { id } } }`;
+  const result = await monday.api(mutation, options);
+  console.log("createMondayUserItem", result);
 }
 
 // export async function updateFormDataInDatabase(

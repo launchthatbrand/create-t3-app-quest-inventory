@@ -82,6 +82,8 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
   const [formData, setFormData] = useState<{
     id: number;
     userId: string;
+    firstName: string | null;
+    lastName: string | null;
   } | null>(null);
   const [userId, setUserId] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState<string | null>(null);
@@ -220,6 +222,8 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
                                           setFormData({
                                             id: item.id,
                                             userId: user.id,
+                                            firstName: user.firstName,
+                                            lastName: user.lastName,
                                           });
                                           setIsDropdownOpen(null);
                                           setIsModalOpen(true);
@@ -256,8 +260,8 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will reassign this order to ${formData?.userId}. Are you sure
-              you wish to continue?
+              This will reassign this order to {formData?.firstName}{" "}
+              {formData?.lastName}. Are you sure you wish to continue?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
