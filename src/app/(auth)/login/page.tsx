@@ -3,7 +3,7 @@ import React from "react";
 
 function LoginPage() {
   return (
-    <div className="rounded-md bg-white bg-opacity-10 p-5 text-white shadow-md">
+    <div className="flex flex-1 items-center justify-center">
       <LoginForm />
     </div>
   );

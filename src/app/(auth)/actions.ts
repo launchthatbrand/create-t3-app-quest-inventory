@@ -53,3 +53,30 @@ export async function readUserSession() {
   const supabase = await supabaseServer();
   return supabase.auth.getSession();
 }
+
+export async function sendResetPassword(email: string) {
+  const supabase = await supabaseServer();
+  const redirectTo =
+    process.env.NODE_ENV === "production"
+      ? "https://fdot-inventory.vercel.app/resetpass"
+      : "http://localhost:3000/resetpass";
+  return supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+}
+
+export async function resetPassword(data: { password: string; code: string }) {
+  console.log("data", data);
+  const supabase = await supabaseServer();
+  try {
+    const { data: session, error } = await supabase.auth.exchangeCodeForSession(
+      data.code,
+    );
+
+    return supabase.auth.updateUser({
+      password: data.password,
+    });
+  } catch (error) {
+    return { error };
+  }
+}

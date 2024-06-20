@@ -3,6 +3,13 @@
 import * as z from "zod";
 
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Form,
   FormControl,
   FormField,
@@ -14,6 +21,8 @@ import {
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import { api } from "~/trpc/react";
 import { cn } from "@/lib/utils";
 import { signUpWithEmailAndPassword } from "../(auth)/actions";
@@ -93,116 +102,136 @@ export default function RegisterForm() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex w-96 flex-row flex-wrap gap-x-8 space-y-5"
         >
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input
-                    className="text-black"
-                    placeholder="example@gmail.com"
-                    {...field}
-                    type="email"
-                    onChange={field.onChange}
+          <Card className="mx-auto max-w-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Sign Up</CardTitle>
+              <CardDescription>
+                Enter your information to create an account
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="text-black"
+                              placeholder="John"
+                              {...field}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="text-black"
+                              placeholder="Smith"
+                              {...field}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="text-black"
+                            placeholder="example@gmail.com"
+                            {...field}
+                            type="email"
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input
-                    className="text-black"
-                    placeholder="password"
-                    {...field}
-                    type="password"
-                    onChange={field.onChange}
-                  />
-                </FormControl>
+                </div>
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="text-black"
+                            placeholder="password"
+                            {...field}
+                            type="password"
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
 
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="tel"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                  <Input
-                    className="text-black"
-                    placeholder="999-999-9999"
-                    {...field}
-                    type="tel"
-                    onChange={field.onChange}
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
+                </div>
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="tel"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="text-black"
+                            placeholder="999-999-9999"
+                            {...field}
+                            type="tel"
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
 
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input
-                    className="text-black"
-                    placeholder="John"
-                    {...field}
-                    onChange={field.onChange}
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input
-                    className="text-black"
-                    placeholder="Smith"
-                    {...field}
-                    onChange={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <Button type="submit" className="flex w-full gap-2">
-            Register
-            <AiOutlineLoading3Quarters className={cn("animate-spin")} />
-          </Button>
+                </div>
+                <Button type="submit" className="w-full">
+                  Create an account
+                </Button>
+              </div>
+              <div className="mt-4 text-center text-sm">
+                Already have an account?{" "}
+                <Link href="/login" className="underline">
+                  Sign in
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </form>
       </Form>
-      <span>or</span>
-      <Button
-        className="text-black"
-        variant={"outline"}
-        onClick={() => router.push("/login")}
-      >
-        Login
-      </Button>
     </div>
   );
 }
