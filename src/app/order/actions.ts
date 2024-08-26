@@ -93,7 +93,45 @@ export type GroupedEvents = Record<
 export async function fetchEvents() {
   try {
     const query =
-      'query { items_page_by_column_values ( limit:50 , board_id: 5385787000 , columns: [{ column_id: "dropdown4", column_values: ["Yes"] }]) {items {id name group {id title} column_values(ids: "text7") { ... on DateValue { time date} }} }}';
+      'query { items_page_by_column_values ( limit:100 , board_id: 5385787000 , columns: [{ column_id: "dropdown4", column_values: ["Yes"] }]) {items {id name group {id title} column_values(ids: "text7") { ... on DateValue { time date} }} }}';
+    const result1 = (await monday.api(query, options)) as Events;
+    // console.log("result1", result1);
+    const result2 = result1.data.items_page_by_column_values.items;
+    console.log("result2", result2);
+
+    const groupedData = result2.reduce<GroupedEvents>((acc, item) => {
+      // Use the group id as the key for each group
+      const { id, title } = item.group;
+
+      // If the group hasn't been added to the accumulator, add it
+      if (!acc[id]) {
+        acc[id] = {
+          groupId: id,
+          title,
+          items: [],
+        };
+      }
+
+      // Add the current item to the group's items array
+      acc[id]?.items.push({
+        id: item.id,
+        name: item.name,
+        column_values: item.column_values,
+      });
+
+      return acc;
+    }, {});
+
+    return groupedData;
+  } catch (error) {
+    console.log("error", error);
+  }
+}
+
+export async function getEventSubBoard() {
+  try {
+    const query =
+      'query { items_page_by_column_values ( limit:50 , board_id: 5385787810 , columns: [{ column_id: "dropdown__1", column_values: ["Yes"] }]) {items {id name group {id title} } }}';
     const result1 = (await monday.api(query, options)) as Events;
     // console.log("result1", result1);
     const result2 = result1.data.items_page_by_column_values.items;
@@ -122,6 +160,50 @@ export async function fetchEvents() {
     }, {});
 
     return groupedData;
+  } catch (error) {
+    console.log("error", error);
+  }
+}
+
+export async function fetchSubEvents(selectedEvent: string) {
+  console.log("fetchSubEvents");
+  try {
+    const query = ` query {items(ids:[${selectedEvent}]) {subitems {id name column_values (ids:"dropdown__1") {text} }}} `;
+    const result1 = await monday.api(query, options);
+
+    const subitems = result1.data.items[0].subitems;
+    console.log("subitems", subitems);
+
+    const filteredSubitems = subitems.filter((subitem) =>
+      subitem.column_values.some((cv) => cv.text === "Yes"),
+    );
+
+    console.log("filteredSubitems", filteredSubitems);
+
+    // const groupedData = result2.reduce<GroupedEvents>((acc, item) => {
+    //   // Use the group id as the key for each group
+    //   const { id, title } = item.group;
+
+    //   // If the group hasn't been added to the accumulator, add it
+    //   if (!acc[id]) {
+    //     acc[id] = {
+    //       groupId: id,
+    //       title,
+    //       items: [],
+    //     };
+    //   }
+
+    //   // Add the current item to the group's items array
+    //   acc[id]?.items.push({
+    //     id: item.id,
+    //     name: item.name,
+    //     column_values: item.column_values,
+    //   });
+
+    //   return acc;
+    // }, {});
+
+    return filteredSubitems;
   } catch (error) {
     console.log("error", error);
   }

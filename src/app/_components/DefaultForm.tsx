@@ -43,6 +43,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { GroupedEvents, fetchSubEvents } from "../order/actions";
 import {
   Popover,
   PopoverContent,
@@ -55,7 +56,6 @@ import { useFieldArray, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import ConfettiComponent from "./Confetti";
-import { GroupedEvents } from "../order/actions";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "./ui/scroll-area";
@@ -108,7 +108,9 @@ export function DefaultForm({
   locations,
   items,
 }: FormProps) {
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [openPopover, setOpenPopover] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -172,6 +174,20 @@ export function DefaultForm({
         required_error: "Please select an Event.",
       }),
     }),
+    subevent: z
+      .object({
+        id: z
+          .string({
+            required_error: "Please select an subEvent.",
+          })
+          .optional(),
+        name: z
+          .string({
+            required_error: "Please select an subEvent.",
+          })
+          .optional(),
+      })
+      .optional(),
     location: z.object({
       id: z.string({
         required_error: "Please select an Event.",
@@ -204,6 +220,7 @@ export function DefaultForm({
     resolver: zodResolver(fullFormSchema),
     defaultValues: {
       event: {},
+      subevent: {},
       items: [],
       quantity: {},
     },
@@ -300,6 +317,30 @@ export function DefaultForm({
   }, [data, form.reset]);
 
   useEffect(() => {
+    const loadFilteredEvents = async () => {
+      if (selectedEvent) {
+        try {
+          const result = await fetchSubEvents(selectedEvent);
+          console.log("result", result);
+          // const newFilteredEvents = events.filter(
+          //   (event) => event.group.id === selectedEvent,
+          // );
+          setFilteredEvents(result);
+          console.log("filteredEvents", result);
+        } catch (error) {
+          console.error("Failed to fetch filtered events:", error);
+          // Handle error or set data to null/empty state
+        }
+      } else {
+        setFilteredEvents([]);
+      }
+    };
+    void loadFilteredEvents();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEvent]);
+
+  useEffect(() => {
     const loadFilteredItems = () => {
       if (selectedCategory) {
         try {
@@ -340,91 +381,167 @@ export function DefaultForm({
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-8 text-black"
         >
-          <FormField
-            control={form.control}
-            name={`event`}
-            render={({ field }) => (
-              <FormItem className="flex w-full flex-col">
-                <FormLabel className="flex items-start justify-between">
-                  Event
-                </FormLabel>
+          <div className="space-y-2">
+            <FormField
+              control={form.control}
+              name={`event`}
+              render={({ field }) => (
+                <FormItem className="flex w-full flex-col">
+                  <FormLabel className="flex items-start justify-between">
+                    Event
+                  </FormLabel>
 
-                <Popover
-                  open={openPopover === `${field.name}`}
-                  onOpenChange={() => handleOpenChange(`${field.name}`)}
-                >
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className={cn(
-                          "w-full justify-between",
-                          !field.value?.name && "text-muted-foreground",
-                        )}
-                        aria-required
-                        disabled={checkin}
-                      >
-                        {field.value?.name ?? "Select event"}
-                        <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                    <Command>
-                      <CommandInput
-                        placeholder="Search events..."
-                        className="h-9"
-                      />
-                      <CommandList>
-                        <CommandEmpty>No events found.</CommandEmpty>
-                        {eventsArray?.map((group) => (
-                          <div key={group.groupId}>
-                            <CommandGroup heading={group.title}>
-                              {group.items.map((event) => {
-                                const formattedDate = event.column_values[0]
-                                  .date
-                                  ? event.column_values[0].date
-                                      .split("-")
-                                      .slice(1)
-                                      .join("/")
-                                  : "N/A";
-                                return (
-                                  <CommandItem
-                                    value={event.name}
-                                    key={event.id}
-                                    onSelect={() => {
-                                      form.setValue(`event`, {
-                                        name: event.name,
-                                        id: event.id,
-                                      });
-                                      setOpenPopover("");
-                                    }}
-                                  >
-                                    {formattedDate && ` ${formattedDate} - `}
-                                    {event.name}
-                                    <CheckIcon
-                                      className={cn(
-                                        "ml-auto h-4 w-4",
-                                        event.id === field.value?.id
-                                          ? "opacity-100"
-                                          : "opacity-0",
-                                      )}
-                                    />
-                                  </CommandItem>
-                                );
-                              })}
-                            </CommandGroup>
-                          </div>
-                        ))}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <Popover
+                    open={openPopover === `${field.name}`}
+                    onOpenChange={() => handleOpenChange(`${field.name}`)}
+                  >
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value?.name && "text-muted-foreground",
+                          )}
+                          aria-required
+                          disabled={checkin}
+                        >
+                          {field.value?.name ?? "Select event"}
+                          <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search events..."
+                          className="h-9"
+                        />
+                        <CommandList>
+                          <CommandEmpty>No events found.</CommandEmpty>
+                          {eventsArray?.map((group) => (
+                            <div key={group.groupId}>
+                              <CommandGroup heading={group.title}>
+                                {group.items.map((event) => {
+                                  const formattedDate = event.column_values[0]
+                                    .date
+                                    ? event.column_values[0].date
+                                        .split("-")
+                                        .slice(1)
+                                        .join("/")
+                                    : "N/A";
+                                  return (
+                                    <CommandItem
+                                      value={event.name}
+                                      key={event.id}
+                                      onSelect={() => {
+                                        form.setValue(`event`, {
+                                          name: event.name,
+                                          id: event.id,
+                                        });
+                                        setSelectedEvent(event.id);
+                                        setOpenPopover("");
+                                      }}
+                                    >
+                                      {formattedDate && ` ${formattedDate} - `}
+                                      {event.name}
+                                      <CheckIcon
+                                        className={cn(
+                                          "ml-auto h-4 w-4",
+                                          event.id === field.value?.id
+                                            ? "opacity-100"
+                                            : "opacity-0",
+                                        )}
+                                      />
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </div>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name={`subevent`}
+              render={({ field }) => (
+                <FormItem className="flex w-full flex-col">
+                  <FormLabel className="flex items-start justify-between">
+                    Sub-Event
+                  </FormLabel>
+
+                  <Popover
+                    open={openPopover === `${field.name}`}
+                    onOpenChange={() => handleOpenChange(`${field.name}`)}
+                  >
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value?.name && "text-muted-foreground",
+                          )}
+                          aria-required
+                          disabled={checkin}
+                        >
+                          {field.value?.name ?? "Select sub-event"}
+                          <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search events..."
+                          className="h-9"
+                        />
+                        <CommandList>
+                          <CommandEmpty>No sub-events found.</CommandEmpty>
+                          <CommandGroup>
+                            {filteredEvents.map((event) => {
+                              return (
+                                <CommandItem
+                                  value={event.name}
+                                  key={event.id}
+                                  onSelect={() => {
+                                    form.setValue(`subevent`, {
+                                      name: event.name,
+                                      id: event.id,
+                                    });
+                                    setOpenPopover("");
+                                  }}
+                                >
+                                  {event.name}
+                                  <CheckIcon
+                                    className={cn(
+                                      "ml-auto h-4 w-4",
+                                      event.id === field.value?.id
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={form.control}
             name={`location`}
