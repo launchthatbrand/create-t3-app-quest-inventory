@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 "use server";
 
 import { api } from "~/trpc/server";
@@ -174,8 +179,9 @@ export async function fetchSubEvents(selectedEvent: string) {
     const subitems = result1.data.items[0].subitems;
     console.log("subitems", subitems);
 
-    const filteredSubitems = subitems.filter((subitem) =>
-      subitem.column_values.some((cv) => cv.text === "Yes"),
+    const filteredSubitems = subitems.filter(
+      (subitem: { column_values: any[] }) =>
+        subitem.column_values.some((cv) => cv.text === "Yes"),
     );
 
     console.log("filteredSubitems", filteredSubitems);
