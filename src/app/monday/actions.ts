@@ -94,6 +94,7 @@ export async function checkinOrder(id: string) {
 }
 
 export async function changeSubitemQuantity(data: any) {
+  console.log("changeSubitemQuantity_init", data);
   const updatedItems = await Promise.all(
     data.items.map(async (item: any) => {
       const itemId = await updateSubitem(item); // Your function to create an item on Monday

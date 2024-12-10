@@ -147,7 +147,7 @@ export function DefaultForm({
   });
 
   const checkinItemSchema = baseItemSchema.extend({
-    // MondayitemId: z.string({ required_error: "Monday Item ID is required." }),
+    itemId: z.string({ required_error: "Monday Item ID is required." }),
     quantity: baseItemSchema.shape.quantity
       .extend({
         checkin: z.coerce
