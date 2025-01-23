@@ -98,7 +98,7 @@ export type GroupedEvents = Record<
 export async function fetchEvents() {
   try {
     const query =
-      'query { items_page_by_column_values ( limit:100 , board_id: 5385787000 , columns: [{ column_id: "dropdown4", column_values: ["Yes"] }]) {items {id name group {id title} column_values(ids: "text7") { ... on DateValue { time date} }} }}';
+      'query { items_page_by_column_values ( limit:100 , board_id: 7298393018 , columns: [{ column_id: "dropdown4", column_values: ["Yes"] }]) {items {id name group {id title} column_values(ids: "text7") { ... on DateValue { time date} }} }}';
     const result1 = (await monday.api(query, options)) as Events;
     // console.log("result1", result1);
     const result2 = result1.data.items_page_by_column_values.items;
