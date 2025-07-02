@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
   } satisfies ChartConfig;
 
   return (
-    <div className="p-4">
+    <div className="container mx-auto w-full p-4">
       <h1 className="mb-6 text-3xl font-bold">Inventory Analytics Dashboard</h1>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

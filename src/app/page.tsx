@@ -25,14 +25,14 @@ export default async function Home() {
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
           <Link
-            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
+            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 ring-1 ring-blue-500/10 hover:bg-blue-500/20"
             href="/order/checkout"
           >
             <h3 className="text-2xl font-bold">Check Out →</h3>
             <div className="text-lg">Check out an order.</div>
           </Link>
           <Link
-            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
+            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 ring-1 ring-blue-500/10 hover:bg-blue-500/20"
             href="/order"
           >
             <h3 className="text-2xl font-bold">Check In →</h3>

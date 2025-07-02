@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import { AppSidebar } from "./_components/app-sidebar";
 import { Inter } from "next/font/google";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { SiteHeader } from "./_components/site-header";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "./_components/ui/toaster";
 import TopNavbar from "./_components/TopNavbar";
@@ -33,13 +34,13 @@ export default async function RootLayout({
       <body>
         <TRPCReactProvider>
           <div className="flex min-h-screen">
-            <SidebarProvider defaultOpen={defaultOpen}>
-              <AppSidebar />
-              <main className="flex-1">
-                <TopNavbar />
-                {children}
-              </main>
-            </SidebarProvider>
+            {/* <SidebarProvider defaultOpen={defaultOpen}> */}
+            {/* <AppSidebar /> */}
+            <main className="flex-1">
+              <SiteHeader />
+              {children}
+            </main>
+            {/* </SidebarProvider> */}
           </div>
           <Toaster />
         </TRPCReactProvider>

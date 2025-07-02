@@ -10,6 +10,9 @@ const config = {
     "plugin:@typescript-eslint/recommended-type-checked",
     "plugin:@typescript-eslint/stylistic-type-checked",
   ],
+  ignorePatterns: [
+    "src/app/_components/ui/**", // Ignore all files within the Shadcn UI components directory
+  ],
   rules: {
     // These opinionated rules are enabled in stylistic-type-checked above.
     // Feel free to reconfigure them to your own preference.

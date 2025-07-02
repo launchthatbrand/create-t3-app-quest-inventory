@@ -1,4 +1,14 @@
-import { Calendar, Home, Inbox, Package, Search, Settings } from "lucide-react";
+import {
+  BarChartBig,
+  Calendar,
+  Home,
+  Inbox,
+  LayoutDashboard,
+  Package,
+  Search,
+  Settings,
+  ShoppingCart,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,34 +25,24 @@ import Link from "next/link";
 // Menu items.
 const items = [
   {
-    title: "Home",
+    title: "Dashboard",
     url: "/",
-    icon: Home,
+    icon: LayoutDashboard,
   },
   {
-    title: "Inventory",
+    title: "Orders",
     url: "/order",
+    icon: ShoppingCart,
+  },
+  {
+    title: "Products",
+    url: "/inventory",
     icon: Package,
   },
   {
-    title: "Monday Forms",
-    url: "/monday/form",
-    icon: Inbox,
-  },
-  {
-    title: "Monday Workspaces",
-    url: "/monday/workspaces",
-    icon: Calendar,
-  },
-  {
-    title: "Monday Categories",
-    url: "/monday/categories",
-    icon: Search,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
+    title: "Analytics",
+    url: "/analytics",
+    icon: BarChartBig,
   },
 ];
 
