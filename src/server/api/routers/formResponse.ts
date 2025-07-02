@@ -76,16 +76,31 @@ export const formResponseRouter = createTRPCRouter({
       orderBy: (formResponses, { desc }) => [desc(formResponses.createdAt)],
     });
   }),
-  getUsersOrders: protectedProcedure.query(({ ctx }) => {
-    return ctx.db.query.formResponses.findMany({
+  /**
+   * Returns orders based on the caller's role.
+   * "admin" -> all checkout orders
+   * other    -> only the caller's own checkout orders
+   */
+  getOrders: protectedProcedure.query(({ ctx }) =>
+    ctx.db.query.formResponses.findMany({
+      where: eq(formResponses.status, "checkout"),
+      with: { users: true },
+      orderBy: (formResponses, { desc }) => [desc(formResponses.createdAt)],
+    }),
+  ),
+  /**
+   * Alias kept for backward-compatibility. Prefer `getOrders`.
+   */
+  getUsersOrders: protectedProcedure.query(({ ctx }) =>
+    ctx.db.query.formResponses.findMany({
       where: and(
         eq(formResponses.createdById, ctx.session.user.id),
         eq(formResponses.status, "checkout"),
       ),
-
       with: { users: true },
-    });
-  }),
+      orderBy: (formResponses, { desc }) => [desc(formResponses.createdAt)],
+    }),
+  ),
   deleteResponse: publicProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {

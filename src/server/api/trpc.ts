@@ -9,6 +9,7 @@
 
 import { TRPCError, initTRPC } from "@trpc/server";
 
+import { Buffer } from "buffer";
 import { ZodError } from "zod";
 import { db } from "~/server/db";
 import supabaseServer from "~/lib/supabase/server";
@@ -34,9 +35,30 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     data: { session },
   } = await supabase.auth.getSession();
 
+  /**
+   * Extract the custom `user_role` claim from the JWT (if present).
+   * This avoids an extra dependency by doing a minimal Base64URL decode of the
+   * second JWT segment (payload).
+   */
+  const extractRoleFromToken = (token: string | undefined | null) => {
+    if (!token) return null;
+    try {
+      // JWT segments are base64url-encoded; Buffer supports this via "base64url".
+      const payload = JSON.parse(
+        Buffer.from(token.split(".")[1] ?? "", "base64url").toString(),
+      ) as { user_role?: string };
+      return payload.user_role ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const role = extractRoleFromToken(session?.access_token);
+
   return {
     db,
     session,
+    role,
     ...opts,
   };
 };

@@ -1,10 +1,13 @@
 import "~/styles/globals.css";
 
-import Header from "./_components/Header";
+import { AppSidebar } from "./_components/app-sidebar";
 import { Inter } from "next/font/google";
-import NextTopLoader from "nextjs-toploader";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "./_components/ui/toaster";
+import TopNavbar from "./_components/TopNavbar";
+import { cookies } from "next/headers";
+import { getServerAuthSession } from "~/server/auth";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -17,23 +20,27 @@ export const metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerAuthSession();
+  const cookieStore = cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
   return (
-    <html lang="en">
-      <body
-        className={`font-sans ${inter.variable} flex min-h-screen flex-1 flex-col bg-gradient-to-b from-[#2e026d] to-[#15162c]`}
-      >
+    <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>
+      <body>
         <TRPCReactProvider>
-          <NextTopLoader />
-          <Header />
-
-          <main className="mt-20 flex flex-1 flex-col items-center py-5 text-white">
-            {children}
-          </main>
+          <div className="flex min-h-screen">
+            <SidebarProvider defaultOpen={defaultOpen}>
+              <AppSidebar />
+              <main className="flex-1">
+                <TopNavbar />
+                {children}
+              </main>
+            </SidebarProvider>
+          </div>
           <Toaster />
         </TRPCReactProvider>
       </body>

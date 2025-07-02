@@ -15,11 +15,11 @@ import { readUserSession } from "../(auth)/actions";
 type Props = {};
 
 export type orderType = inferProcedureOutput<
-  AppRouter["formResponse"]["getUsersOrders"]
+  AppRouter["formResponse"]["getOrders"]
 >;
 
 export default function OrderPage({}: Props) {
-  const { data, isLoading } = api.formResponse.getUsersOrders.useQuery();
+  const { data, isLoading } = api.formResponse.getOrders.useQuery();
   console.log("data", data);
 
   // const [data, setData] = useState<orderType>([]);

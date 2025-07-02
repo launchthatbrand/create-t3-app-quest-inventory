@@ -133,7 +133,7 @@ export async function updateSubitem(data: any) {
     const newStockBeforeRestock =
       newQuantity - parseInt(alterTriggerQuantity, 10);
     console.log("newStockBeforeRestock", newStockBeforeRestock);
-    const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${sku}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\", \\\"numbers67\\\": \\\"${newStockBeforeRestock}\\\"}\") { id }}`;
+    const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${sku}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\"}\") { id }}`;
     const result6 = await monday.api(mutation2, options);
     console.log("result6", result6);
     return result1;
