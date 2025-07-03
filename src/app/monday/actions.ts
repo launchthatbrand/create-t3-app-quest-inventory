@@ -60,8 +60,15 @@ export async function saveFormResponse(values: string) {
 export async function updateFormResponse(orderId: number, values: string) {
   console.log("updateFormResponse", values);
   const data = JSON.parse(values);
-  const mondayItemId = data.MondayItemId;
   try {
+    // 1. Get the DB record so we can read the mondayItemId column
+    const record = await api.formResponse.getFormResponseById.query({
+      id: orderId,
+    });
+    if (!record?.mondayItemId) {
+      throw new Error("mondayItemId missing on formResponses row");
+    }
+    const mondayItemId = record.mondayItemId;
     // Step 1: Change item status to checkin
 
     const result1 = await checkinOrder(mondayItemId);

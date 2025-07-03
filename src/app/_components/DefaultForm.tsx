@@ -60,6 +60,7 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { Textarea } from "./ui/textarea";
+import { api } from "~/trpc/react";
 import { cn } from "@/lib/utils";
 import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
@@ -74,6 +75,7 @@ export interface FormProps {
   events?: GroupedEvents | undefined;
   locations?: unknown;
   items?: unknown;
+  debugMode?: boolean;
 }
 
 export interface Category {
@@ -107,6 +109,7 @@ export function DefaultForm({
   events,
   locations,
   items,
+  debugMode = false,
 }: FormProps) {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
@@ -128,19 +131,21 @@ export function DefaultForm({
       id: z.string({ required_error: "Please select an Event." }),
       title: z.string({ required_error: "Please select an Event." }),
     }),
-    id: z.string({ required_error: "Please select an Event." }),
+    id: z.string({ required_error: "Product ID is required." }),
     name: z
       .string({
-        required_error: "Please select an Event.",
+        required_error: "Product name is required.",
         invalid_type_error: "Name must be a string",
       })
-      .min(1, { message: "Checkin quantity should be at least 1" }),
+      .min(1, { message: "Product name must not be empty" }),
     desc: z.string().optional(),
     // Define quantity with only checkout as required
     quantity: z.object({
-      checkout: z.coerce.number({
-        required_error: "Please specify a quantity.",
-      }),
+      checkout: z.coerce
+        .number({
+          required_error: "Please specify a checkout quantity.",
+        })
+        .min(1, { message: "Checkout quantity should be at least 1" }),
       // Initially, do not make checkin required
       checkin: z.coerce.number().optional(),
     }),
@@ -281,7 +286,22 @@ export function DefaultForm({
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    console.log("form submitted", values);
+    console.log("Form submitted with values:", values);
+    values.items.forEach((item, index) => {
+      console.log(`Submitted Item ${index} details:`, item);
+      console.log(`Submitted Item ${index} Product ID:`, item.id);
+      console.log(`Submitted Item ${index} Product Name:`, item.name);
+      console.log(
+        `Submitted Item ${index} Quantity Checkout:`,
+        item.quantity.checkout,
+      );
+      if (item.quantity.checkin !== undefined) {
+        console.log(
+          `Submitted Item ${index} Quantity Checkin:`,
+          item.quantity.checkin,
+        );
+      }
+    });
     const jsonValues = JSON.stringify(values);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const result = await saveFormResponse(jsonValues);
@@ -308,13 +328,37 @@ export function DefaultForm({
 
   useEffect(() => {
     if (data) {
-      const parsedData = JSON.parse(data);
-      console.log("parsedData", parsedData);
-
-      form.reset(parsedData); // Prepopulate form if data is provided
+      try {
+        const parsedData = JSON.parse(data);
+        console.log("parsedData from DB:", parsedData);
+        // Check the structure of parsedData.items and its elements
+        if (parsedData.items && Array.isArray(parsedData.items)) {
+          parsedData.items.forEach(
+            (item: z.infer<typeof baseItemSchema>, index: number) => {
+              console.log(`Item ${index} in parsedData:`, item);
+              console.log(`Item ${index} product ID:`, item.id);
+              console.log(`Item ${index} product name:`, item.name);
+              // You might want to add more specific checks here based on your schema
+            },
+          );
+        }
+        form.reset(parsedData); // Prepopulate form if data is provided
+      } catch (error) {
+        console.error("Failed to parse data from DB:", error);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, form.reset]);
+
+  // Add a useEffect to log form errors when they change
+  useEffect(() => {
+    if (Object.keys(form.formState.errors).length > 0) {
+      console.log("Form Errors:", form.formState.errors);
+      // Log specific errors related to items
+      if (form.formState.errors.items) {
+        console.log("Item-specific errors:", form.formState.errors.items);
+      }
+    }
+  }, [form.formState.errors]);
 
   useEffect(() => {
     const loadFilteredEvents = async () => {
@@ -362,6 +406,28 @@ export function DefaultForm({
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
+
+  const updateFormMutation = api.formResponse.updateWithMondayData.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Item IDs saved",
+        description: "The Monday item IDs were successfully updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error saving item IDs",
+        description: error.message,
+      });
+    },
+  });
+
+  const handleSaveItemIds = async () => {
+    if (!orderId) return;
+    const currentValues = form.getValues();
+    const jsonValues = JSON.stringify(currentValues);
+    await updateFormMutation.mutateAsync({ id: orderId, data: jsonValues });
+  };
 
   return (
     <div className="flex w-full flex-1 flex-col rounded-md bg-white p-3 text-black shadow-md md:w-2/5">
@@ -910,6 +976,30 @@ export function DefaultForm({
                             }}
                           />
                         )}
+                        {/* Debug mode: Editable itemId field */}
+                        {debugMode && (
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.itemId`}
+                            render={({ field }) => (
+                              <FormItem className="flex w-full flex-col">
+                                <FormLabel className="flex items-start justify-between">
+                                  Debug: Monday Item ID
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Monday Item ID"
+                                    {...field}
+                                    onChange={(event) => {
+                                      field.onChange(event.target.value);
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                         <AlertDialog>
                           <AlertDialogTrigger
                             disabled={checkin}
@@ -989,6 +1079,16 @@ export function DefaultForm({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {debugMode && orderId && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSaveItemIds}
+              className="ml-2"
+            >
+              Save Item IDs
+            </Button>
+          )}
         </form>
       </Form>
     </div>
