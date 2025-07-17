@@ -156,14 +156,6 @@ export default function LoginForm() {
                         <FormItem>
                           <div className="flex items-center">
                             <FormLabel>Password</FormLabel>
-
-                            <Button
-                              variant={"link"}
-                              onClick={() => setIsResetPass(true)}
-                              className="ml-auto inline-block p-0 text-sm underline"
-                            >
-                              Forgot your password?
-                            </Button>
                           </div>
                           <FormControl>
                             <Input
@@ -185,6 +177,13 @@ export default function LoginForm() {
                     Login
                   </Button>
                 </div>
+                <Button
+                  variant={"link"}
+                  onClick={() => setIsResetPass(true)}
+                  className="ml-auto inline-block p-0 text-sm underline"
+                >
+                  Forgot your password?
+                </Button>
                 <div className="mt-4 text-center text-sm">
                   Don&apos;t have an account?{" "}
                   <Link href="/register" className="underline">
