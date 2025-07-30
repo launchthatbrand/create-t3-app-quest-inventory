@@ -8,15 +8,16 @@ import {
   fetchLocations,
 } from "../actions";
 
-import { DefaultForm } from "~/app/_components/DefaultForm";
+import { CheckoutFormWrapper } from "./CheckoutFormWrapper";
 import React from "react";
 
 export const revalidate = 10;
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-type Props = {};
+interface Props {
+  searchParams: { mode?: string };
+}
 
-async function CheckoutPage({}: Props) {
+async function CheckoutPage({ searchParams }: Props) {
   const fetchedEvents = await fetchEvents();
   const fetchedLocations = await fetchLocations();
   const fetchedItems = await fetchItems();
@@ -27,15 +28,18 @@ async function CheckoutPage({}: Props) {
   const fetchedCategories = await fetchCategories();
   const categories = fetchedCategories?.data.boards[0].groups;
 
+  const isDuplicateMode = searchParams.mode === "duplicate";
+
   // console.log("categories", categories);
   return (
     <div className="container flex flex-col items-center justify-center rounded-md p-3 text-black">
-      <DefaultForm
+      <CheckoutFormWrapper
         type="out"
         categories={categories}
         events={fetchedEvents}
         locations={locations}
         items={items}
+        isDuplicateMode={isDuplicateMode}
       />
     </div>
   );

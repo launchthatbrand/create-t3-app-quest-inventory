@@ -37,6 +37,37 @@ export async function deleteOrder(id: number) {
   return result;
 }
 
+export async function duplicateOrder(id: number) {
+  try {
+    // Step 1: Get the original order data
+    const originalOrder = await api.formResponse.getFormResponseById.query({
+      id,
+    });
+    if (!originalOrder) {
+      throw new Error("Original order not found");
+    }
+
+    // Step 2: Parse the original form data and clean it for duplication
+    const originalFormData = JSON.parse(originalOrder.data);
+
+    // Remove Monday-specific IDs that should be regenerated
+    const cleanedFormData = {
+      ...originalFormData,
+      MondayItemId: undefined, // Will be regenerated
+      items: originalFormData.items.map((item: any) => ({
+        ...item,
+        itemId: undefined, // Monday subitem ID will be regenerated
+      })),
+    };
+
+    // Return the cleaned data to be handled on the client side
+    return { success: true, data: cleanedFormData };
+  } catch (error) {
+    console.error("Error preparing duplicate order:", error);
+    throw new Error("Failed to prepare duplicate order");
+  }
+}
+
 export async function fetchItems() {
   try {
     const query1 =

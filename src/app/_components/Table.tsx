@@ -53,6 +53,7 @@ import {
   Calendar,
   CheckSquare2Icon,
   Clipboard,
+  Copy,
   MoreHorizontal,
   Tags,
   Trash,
@@ -66,9 +67,14 @@ import { api } from "~/trpc/react";
 interface DefaultTableProps {
   data: orderType;
   handleDelete: (id: number) => void;
+  handleDuplicate: (id: number) => void;
 }
 
-export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
+export function DefaultTable({
+  data,
+  handleDelete,
+  handleDuplicate,
+}: DefaultTableProps) {
   const router = useRouter();
   const utils = api.useUtils();
 
@@ -181,6 +187,13 @@ export function DefaultTable({ data, handleDelete }: DefaultTableProps) {
                         >
                           <Clipboard className="mr-2 h-4 w-4" />
                           Copy order ID
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => handleDuplicate(item.id)}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Duplicate Order
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator />

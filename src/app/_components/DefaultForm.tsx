@@ -76,6 +76,7 @@ export interface FormProps {
   locations?: unknown;
   items?: unknown;
   debugMode?: boolean;
+  readonly?: boolean;
 }
 
 export interface Category {
@@ -109,7 +110,8 @@ export function DefaultForm({
   events,
   locations,
   items,
-  debugMode = false,
+  debugMode = process.env.NODE_ENV === "development",
+  readonly = false,
 }: FormProps) {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
@@ -249,39 +251,54 @@ export function DefaultForm({
 
   // Define a submit handler.
   async function confirmAndSubmit() {
-    console.log("Form data:", formData);
-    const jsonValues = JSON.stringify(formData);
-    if (!checkin) {
-      const result = await saveFormResponse(jsonValues);
-    } else {
-      const result = await updateFormResponse(orderId, jsonValues);
-      router.push("/");
+    try {
+      console.log("Form data:", formData);
+      const jsonValues = JSON.stringify(formData);
+      if (!checkin) {
+        const result = await saveFormResponse(jsonValues);
+      } else {
+        const result = await updateFormResponse(orderId, jsonValues);
+        router.push("/");
+      }
+
+      form.reset();
+      setIsModalOpen(false);
+
+      // Show confetti
+      setIsConfettiVisible(true);
+      // Hide confetti after 5 seconds
+      setTimeout(() => setIsConfettiVisible(false), 5000);
+
+      //Show Toast
+      toast({
+        title: checkin
+          ? "Sucessfully Checked In Order"
+          : "Sucessfully Checked Out Order",
+        // description: (
+        //   // <div className="min-h-[150px]">{/* <ConfettiComponent /> */}</div>
+
+        //   <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+        //     Sucessfully Submitted:
+        //     <code className="text-white">
+        //       {JSON.stringify(formData, null, 2)}
+        //     </code>
+        //   </pre>
+        // ),
+      });
+    } catch (error) {
+      console.error("Form submission error:", error);
+
+      // Show error toast to user
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+
+      // Don't close modal or reset form on error
+      // Keep modal open so user can try again
     }
-
-    form.reset();
-    setIsModalOpen(false);
-
-    // Show confetti
-    setIsConfettiVisible(true);
-    // Hide confetti after 5 seconds
-    setTimeout(() => setIsConfettiVisible(false), 5000);
-
-    //Show Toast
-    toast({
-      title: checkin
-        ? "Sucessfully Checked In Order"
-        : "Sucessfully Checked Out Order",
-      // description: (
-      //   // <div className="min-h-[150px]">{/* <ConfettiComponent /> */}</div>
-
-      //   <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-      //     Sucessfully Submitted:
-      //     <code className="text-white">
-      //       {JSON.stringify(formData, null, 2)}
-      //     </code>
-      //   </pre>
-      // ),
-    });
   }
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
@@ -471,7 +488,7 @@ export function DefaultForm({
                             !field.value?.name && "text-muted-foreground",
                           )}
                           aria-required
-                          disabled={checkin}
+                          disabled={checkin || readonly}
                         >
                           {field.value?.name ?? "Select event"}
                           <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -557,7 +574,7 @@ export function DefaultForm({
                             !field.value?.name && "text-muted-foreground",
                           )}
                           aria-required
-                          disabled={checkin}
+                          disabled={checkin || readonly}
                         >
                           {field.value?.name ?? "Select sub-event"}
                           <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -630,7 +647,7 @@ export function DefaultForm({
                           "w-full justify-between",
                           !field.value && "text-muted-foreground",
                         )}
-                        disabled={checkin}
+                        disabled={checkin || readonly}
                       >
                         {field.value?.name ?? "Select pickup/dropoff location"}
                         <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -717,7 +734,7 @@ export function DefaultForm({
                                       "w-full justify-between",
                                       !field.value && "text-muted-foreground",
                                     )}
-                                    disabled={checkin}
+                                    disabled={checkin || readonly}
                                   >
                                     {field.value?.title ?? "Select Category"}
                                     <TbCaretUpDownFilled className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -933,7 +950,8 @@ export function DefaultForm({
                                   min={1}
                                   disabled={
                                     !form.watch(`items.${index}.categories`) ||
-                                    checkin
+                                    checkin ||
+                                    readonly
                                   }
                                 />
                               </FormControl>
@@ -965,7 +983,9 @@ export function DefaultForm({
                                       min={0}
                                       max={checkoutQuantity}
                                       disabled={
-                                        !form.watch(`items.${index}.categories`)
+                                        !form.watch(
+                                          `items.${index}.categories`,
+                                        ) || readonly
                                       }
                                     />
                                   </FormControl>
@@ -1002,7 +1022,7 @@ export function DefaultForm({
                         )}
                         <AlertDialog>
                           <AlertDialogTrigger
-                            disabled={checkin}
+                            disabled={checkin || readonly}
                             className="self-end rounded-md bg-red-700 p-2 text-white shadow-md disabled:bg-slate-400"
                           >
                             <TrashIcon className="h-6 w-6" />
@@ -1044,6 +1064,7 @@ export function DefaultForm({
             <Button
               className="w-full self-end"
               type="button"
+              disabled={readonly}
               onClick={() =>
                 append({
                   quantity: {
@@ -1060,7 +1081,11 @@ export function DefaultForm({
             type="submit"
             onClick={form.handleSubmit(showConfirmationModal)}
           >
-            {type === "in" ? "Check-In" : "Check-Out"}
+            {readonly
+              ? "Duplicate Order"
+              : type === "in"
+                ? "Check-In"
+                : "Check-Out"}
           </Button>
           <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <AlertDialogContent>

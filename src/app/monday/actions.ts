@@ -69,6 +69,9 @@ export async function updateFormResponse(orderId: number, values: string) {
       throw new Error("mondayItemId missing on formResponses row");
     }
     const mondayItemId = record.mondayItemId;
+    if (!mondayItemId) {
+      throw new Error("mondayItemId missing on formResponses row");
+    }
     // Step 1: Change item status to checkin
 
     const result1 = await checkinOrder(mondayItemId);
@@ -208,32 +211,58 @@ export async function createMondayItem(
     // Insert the createMondayItemId into formData
     formData.MondayItemId = createMondayItemId;
 
-    const updatedItems = await Promise.all(
-      formData.items.map(async (item: any) => {
+    // Process subitems sequentially but without forced delays
+    // Only add delays during retries for failed requests
+    const updatedItems = [];
+    for (let i = 0; i < formData.items.length; i++) {
+      const item = formData.items[i];
+      console.log(
+        `Creating subitem ${i + 1}/${formData.items.length}: ${item.name}`,
+      );
+
+      try {
         const itemId = await createSubitem(
           item,
           createMondayItemResult.data.create_item.id,
-        ); // Your function to create an item on Monday
-        return { ...item, itemId }; // Append the itemId to the item
-      }),
-    );
+        );
+
+        if (!itemId) {
+          throw new Error(`Failed to create subitem for ${item.name}`);
+        }
+
+        updatedItems.push({ ...item, itemId });
+        // No delay here - proceed immediately to next item on success
+      } catch (error) {
+        console.error(`Error creating subitem ${i + 1} (${item.name}):`, error);
+        // Instead of failing the entire order, mark this item as failed
+        // but continue with other items
+        updatedItems.push({
+          ...item,
+          itemId: null,
+          error: `Failed to create: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      }
+    }
+
+    // Check if any subitems failed to create
+    const failedItems = updatedItems.filter((item) => !item.itemId);
+    if (failedItems.length > 0) {
+      console.warn(
+        `Warning: ${failedItems.length} subitem(s) failed to create:`,
+        failedItems.map((item) => item.name),
+      );
+
+      // You might want to implement a retry mechanism here
+      // or handle partial failures differently based on your business logic
+    }
 
     // Update the formData with the updated items
     const updatedFormData = { ...formData, items: updatedItems };
 
     return { createMondayItemId, updatedFormData };
-
-    // // Now, update the JSONB column in your database with this updatedFormData
-    // await updateFormDataInDatabase(dbData.id, updatedFormData); // Implement this function based on your DB solution
-
-    // const item_id = result1.data.create_item.id;
-    // console.log("createItem_itemID", item_id);
-    // const mutation2 = `mutation { change_multiple_column_values (board_id: 5980720965, item_id: \"${item_id}\", column_values: \"{ \\\"name\\\": \\\"${item_name} : ${item_id}\\\" }\") { id board { id } } }`;
-    // const result2 = await monday.api(mutation2, options);
-    // console.log("createItem_result2", result2);
-    // return result2;
   } catch (error) {
     console.log("error", error);
+    throw error; // Re-throw to ensure calling code handles the error
   }
 }
 
@@ -248,47 +277,94 @@ export async function createMondayUserItem({ data }: AuthResponse) {
 //   updatedFormData: JsonObject,
 // ) {}
 
+// Helper function to retry API calls with exponential backoff
+// Only adds delays between retry attempts, not on the first attempt
+async function retryApiCall<T>(
+  apiCall: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000,
+): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await apiCall();
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed:`, error);
+
+      // Check if it's a rate limit error (429 status)
+      const isRateLimit =
+        error &&
+        (String(error).includes("429") ||
+          String(error).includes("Rate Limit") ||
+          String(error).includes("Too Many Requests"));
+
+      // If it's the last attempt or not a retryable error, throw
+      if (attempt === maxRetries || !isRateLimit) {
+        throw error;
+      }
+
+      // Only add delay between retry attempts (not on first attempt)
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(
+        `Rate limit detected. Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  // This should never be reached, but TypeScript requires it
+  throw new Error("Retry attempts exhausted");
+}
+
 export async function createSubitem(
   data: InventoryFormData["items"][number],
   newItemId: string,
 ) {
-  try {
-    const { name, id, quantity } = data;
-    console.log("item name", name);
-    const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: ${JSON.stringify(name)}, column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text\\\": \\\"${id}\\\" }\") { id board { id } } }`;
-    const result = await monday.api(mutation, options);
+  return retryApiCall(
+    async () => {
+      const { name, id, quantity } = data;
+      console.log("item name", name);
+      const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: ${JSON.stringify(name)}, column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text\\\": \\\"${id}\\\" }\") { id board { id } } }`;
+      const result = await monday.api(mutation, options);
 
-    const query2 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers5\"]) { text }} }`;
-    const query3 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers\"]) { text }} }`;
-    const query4 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers6\"]) { text }} }`;
+      if (!result?.data?.create_subitem?.id) {
+        throw new Error(
+          `Failed to create subitem: Invalid response from Monday API`,
+        );
+      }
 
-    const result3 = await monday.api(query2, options);
-    const currentStock = result3.data.items[0].column_values[0].text;
-    console.log("currentStock", currentStock);
-    const result4 = await monday.api(query3, options);
-    const currentCheckedOut = result4.data.items[0].column_values[0].text || 0;
-    const result5 = await monday.api(query4, options);
-    const alterTriggerQuantity =
-      result5.data.items[0].column_values[0].text || 0;
+      const query2 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers5\"]) { text }} }`;
+      const query3 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers\"]) { text }} }`;
+      const query4 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers6\"]) { text }} }`;
 
-    console.log("currentCheckedOut", currentCheckedOut);
+      const result3 = await monday.api(query2, options);
+      const currentStock = result3.data.items[0].column_values[0].text;
+      console.log("currentStock", currentStock);
+      const result4 = await monday.api(query3, options);
+      const currentCheckedOut =
+        result4.data.items[0].column_values[0].text || 0;
+      const result5 = await monday.api(query4, options);
+      const alterTriggerQuantity =
+        result5.data.items[0].column_values[0].text || 0;
 
-    const alterTriggerQuantityNum = parseInt(alterTriggerQuantity, 10);
+      console.log("currentCheckedOut", currentCheckedOut);
 
-    const newQuantity = parseInt(currentStock, 10) - quantity.checkout;
-    console.log("newQuantity", newQuantity);
-    console.log("alterTriggerQuantityNum", alterTriggerQuantityNum);
-    const newCheckOut = parseInt(currentCheckedOut, 10) + quantity.checkout;
-    const newStockBeforeRestock =
-      newQuantity - parseInt(alterTriggerQuantity, 10);
-    console.log("newStockBeforeRestock", newStockBeforeRestock);
+      const alterTriggerQuantityNum = parseInt(alterTriggerQuantity, 10);
 
-    const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${id}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\", \\\"numbers67\\\": \\\"${newStockBeforeRestock}\\\"}\") { id }}`;
-    const result6 = await monday.api(mutation2, options);
-    console.log("result6", result6);
+      const newQuantity = parseInt(currentStock, 10) - quantity.checkout;
+      console.log("newQuantity", newQuantity);
+      console.log("alterTriggerQuantityNum", alterTriggerQuantityNum);
+      const newCheckOut = parseInt(currentCheckedOut, 10) + quantity.checkout;
+      const newStockBeforeRestock =
+        newQuantity - parseInt(alterTriggerQuantity, 10);
+      console.log("newStockBeforeRestock", newStockBeforeRestock);
 
-    return result.data.create_subitem.id;
-  } catch (error) {
-    console.log("error", error);
-  }
+      const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${id}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\", \\\"numbers67\\\": \\\"${newStockBeforeRestock}\\\"}\") { id }}`;
+      const result6 = await monday.api(mutation2, options);
+      console.log("result6", result6);
+
+      return result.data.create_subitem.id;
+    },
+    3,
+    1000,
+  ); // 3 retries, starting with 1 second delay
 }
