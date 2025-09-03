@@ -31,6 +31,8 @@ export const formResponseRouter = createTRPCRouter({
         mondayItemId: z.string().optional(),
         data: z.string().optional(),
         status: z.string().optional(),
+        processingStatus: z.string().optional(),
+        processingMeta: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -40,6 +42,10 @@ export const formResponseRouter = createTRPCRouter({
           mondayItemId: input.mondayItemId,
           data: input.data,
           status: input.status,
+          processingStatus: input.processingStatus,
+          processingMeta: input.processingMeta as unknown as
+            | Record<string, unknown>
+            | undefined,
         })
         .where(eq(formResponses.id, input.id))
         .returning();

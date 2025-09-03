@@ -6,17 +6,8 @@
 "use server";
 
 import { api } from "~/trpc/server";
+import { mondayApiWithRetry } from "~/app/monday/actions";
 import { redirect } from "next/navigation";
-
-import { type APIOptions } from "monday-sdk-js/types/client-api.interface";
-import mondaySdk from "monday-sdk-js";
-
-const monday = mondaySdk();
-monday.setApiVersion("2023-10");
-
-const options: APIOptions = {
-  token: process.env.MONDAY_TOKEN,
-};
 
 export async function goToOrder(id: string) {
   redirect(`/order/${id}`);
@@ -74,7 +65,7 @@ export async function fetchItems() {
       '{ boards (ids: 5798486455) { items_page (limit: 500 , query_params: {order_by:[{column_id:"name"}]}) { items { id name group { title id } assets { id public_url }} } } }';
     const query2 =
       '{ boards (ids: 5798486455) { items_page (limit: 500, query_params: {order_by:[{column_id:"name"}], rules: [{column_id: "numbers5", compare_value: [0], operator: greater_than}], operator: and }) { items { id name group { title id } assets { id public_url }} } } }';
-    const result = await monday.api(query2, options);
+    const result = await mondayApiWithRetry(query2);
     console.log("fetchItems", result);
     return result;
   } catch (error) {
@@ -85,7 +76,7 @@ export async function fetchItems() {
 export async function fetchCategories() {
   try {
     const query = "query { boards (ids: 5798486455) { groups { title id }} }";
-    const result = await monday.api(query, options);
+    const result = await mondayApiWithRetry(query);
     // console.log("fetchCategories", result);
     return result;
   } catch (error) {
@@ -130,7 +121,7 @@ export async function fetchEvents() {
   try {
     const query =
       'query { items_page_by_column_values ( limit:100 , board_id: 7298393018 , columns: [{ column_id: "dropdown4", column_values: ["Yes"] }]) {items {id name group {id title} column_values(ids: "text7") { ... on DateValue { time date} }} }}';
-    const result1 = (await monday.api(query, options)) as Events;
+    const result1 = (await mondayApiWithRetry(query)) as Events;
     // console.log("result1", result1);
     const result2 = result1.data.items_page_by_column_values.items;
     console.log("result2", result2);
@@ -168,7 +159,7 @@ export async function getEventSubBoard() {
   try {
     const query =
       'query { items_page_by_column_values ( limit:50 , board_id: 5385787810 , columns: [{ column_id: "dropdown__1", column_values: ["Yes"] }]) {items {id name group {id title} } }}';
-    const result1 = (await monday.api(query, options)) as Events;
+    const result1 = (await mondayApiWithRetry(query)) as Events;
     // console.log("result1", result1);
     const result2 = result1.data.items_page_by_column_values.items;
 
@@ -205,7 +196,7 @@ export async function fetchSubEvents(selectedEvent: string) {
   console.log("fetchSubEvents");
   try {
     const query = ` query {items(ids:[${selectedEvent}]) {subitems {id name column_values (ids:"dropdown__1") {text} }}} `;
-    const result1 = await monday.api(query, options);
+    const result1 = await mondayApiWithRetry(query);
 
     const subitems = result1.data.items[0].subitems;
     console.log("subitems", subitems);
@@ -250,7 +241,7 @@ export async function fetchLocations() {
   try {
     const query =
       "{ boards (ids: 5987199810) { items_page (limit: 500) { items { id name } } } }";
-    const result = await monday.api(query, options);
+    const result = await mondayApiWithRetry(query);
     return result;
   } catch (error) {
     console.log("error", error);

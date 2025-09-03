@@ -16,12 +16,22 @@ import mondaySdk from "monday-sdk-js";
 import { type APIOptions } from "monday-sdk-js/types/client-api.interface";
 import { JsonObject } from "next-auth/adapters";
 import { AuthResponse } from "@supabase/supabase-js";
+import { env } from "~/env.js";
 
 const monday = mondaySdk();
 monday.setApiVersion("2023-10");
 
 const options: APIOptions = {
   token: process.env.MONDAY_TOKEN,
+};
+
+export async function mondayApiWithRetry(query: string): Promise<any> {
+  return retryApiCall(() => monday.api(query, options));
+}
+
+const toNum = (v: unknown): number => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 };
 
 export async function saveFormResponse(values: string) {
@@ -72,32 +82,42 @@ export async function updateFormResponse(orderId: number, values: string) {
     if (!mondayItemId) {
       throw new Error("mondayItemId missing on formResponses row");
     }
-    // Step 1: Change item status to checkin
 
-    const result1 = await checkinOrder(mondayItemId);
+    // Trigger background processing for checkin (fire-and-forget)
+    try {
+      const rawBase = env.NEXTAUTH_URL ?? process.env.NEXTAUTH_URL ?? "";
+      const baseUrl = rawBase?.startsWith("http")
+        ? rawBase
+        : rawBase
+          ? `https://${rawBase}`
+          : "http://localhost:3000";
+      void fetch(`${baseUrl}/api/orders/${orderId}/checkin-items`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: values,
+      }).catch((e) =>
+        console.error("Failed to trigger background checkin-items", e),
+      );
+    } catch (err) {
+      console.error("Error firing background checkin processing", err);
+    }
 
-    // Step 2: Change checkin quantity on subitems
-
-    const result2 = await changeSubitemQuantity(data);
-
-    // Step 3: update quantity field on Inventory board
-
-    // Step 4: update database
-    const updateWithMondayData =
-      await api.formResponse.updateWithMondayData.mutate({
-        id: orderId,
-        status: "checkin",
-      });
-
-    // const result3 = await updateInventoryItemQuantity();
-  } catch (error) {}
+    // Update DB status immediately; processingStatus will be updated by background job
+    await api.formResponse.updateWithMondayData.mutate({
+      id: orderId,
+      status: "checkin",
+      processingStatus: "checkin-processing",
+    });
+  } catch (error) {
+    console.error("updateFormResponse error", error);
+  }
 }
 
 export async function checkinOrder(id: string) {
   console.log("checkinOrder_init", id);
   try {
     const mutation = `mutation { change_simple_column_value (board_id: 6309440166, item_id: \"${id}\", column_id:\"status\", value: \"1\") { id }}`;
-    const updateMondayOrder = await monday.api(mutation, options);
+    const updateMondayOrder = await mondayApiWithRetry(mutation);
     console.log("updateMondayOrder", updateMondayOrder);
     return updateMondayOrder;
   } catch (error) {}
@@ -118,33 +138,30 @@ export async function updateSubitem(data: any) {
     const { itemId, quantity } = data;
     console.log("updateSubitem_id", itemId);
     const mutation1 = `mutation { change_simple_column_value (board_id: 6314721404, item_id: \"${itemId}\", column_id:\"numbers2\", value: \"${quantity.checkin}\") { id }}`;
-    const result1 = await monday.api(mutation1, options);
+    const result1 = await mondayApiWithRetry(mutation1);
 
     const query1 = `query { items (ids: \"${itemId}\") { column_values (ids: [\"text\"]) { text }} }`;
-    const result2 = await monday.api(query1, options);
+    const result2 = await mondayApiWithRetry(query1);
     const sku = result2.data.items[0].column_values[0].text;
 
-    const query2 = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers5\"]) { text }} }`;
-    const query3 = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers\"]) { text }} }`;
-    const query4 = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers6\"]) { text }} }`;
+    // Consolidated single query for multiple columns
+    const consolidated = `query { items (ids: \"${sku}\") { column_values (ids: [\"numbers5\", \"numbers\", \"numbers6\"]) { id text } } }`;
+    const consolidatedResult: any = await mondayApiWithRetry(consolidated);
+    const columns: Array<{ id: string; text: string }> =
+      consolidatedResult.data.items[0].column_values;
+    const getText = (colId: string) =>
+      columns.find((c) => c.id === colId)?.text ?? "0";
+    const currentStock = getText("numbers5");
+    const currentCheckedOut = getText("numbers");
+    const alterTriggerQuantity = getText("numbers6");
 
-    const result5 = await monday.api(query4, options);
-    const alterTriggerQuantity =
-      result5.data.items[0].column_values[0].text || 0;
+    const newQuantity = toNum(currentStock) + toNum(quantity.checkin);
+    const newCheckOut = toNum(currentCheckedOut) - toNum(quantity.checkin);
 
-    const result3 = await monday.api(query2, options);
-    const currentStock = result3.data.items[0].column_values[0].text;
-    const result4 = await monday.api(query3, options);
-    const currentCheckedOut = result4.data.items[0].column_values[0].text;
-
-    const newQuantity = parseInt(currentStock, 10) + quantity.checkin;
-    const newCheckOut = parseInt(currentCheckedOut, 10) - quantity.checkin;
-
-    const newStockBeforeRestock =
-      newQuantity - parseInt(alterTriggerQuantity, 10);
+    const newStockBeforeRestock = newQuantity - toNum(alterTriggerQuantity);
     console.log("newStockBeforeRestock", newStockBeforeRestock);
     const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${sku}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\"}\") { id }}`;
-    const result6 = await monday.api(mutation2, options);
+    const result6 = await mondayApiWithRetry(mutation2);
     console.log("result6", result6);
     return result1;
   } catch (error) {
@@ -157,7 +174,7 @@ export async function updateInventoryColumn(data: any) {
     const { itemId, quantity } = data;
     console.log("updateSubitem_id", itemId);
     const mutation = `mutation { change_simple_column_value (board_id: 6314721404, item_id: \"${itemId}\", column_id:\"numbers2\", value: \"${quantity.checkin}\") { id }}`;
-    const result = await monday.api(mutation, options);
+    const result = await mondayApiWithRetry(mutation);
     console.log("updateSubitem_end", result);
     return result;
   } catch (error) {
@@ -203,61 +220,45 @@ export async function createMondayItem(
 
   const formData: InventoryFormData = JSON.parse(dbData.data);
   try {
-    const mutation = `mutation { create_item (board_id: 6309440166, item_name: \"Order# ${dbData.id}\", column_values: \"{ \\\"email\\\": \\\"${user?.email} ${user?.email}\\\", \\\"text0\\\": \\\"${user?.tel}\\\", \\\"text3\\\": \\\"${formData.location.name}\\\",\\\"text4\\\": \\\"${formData.event.name}\\\",\\\"text__1\\\": \\\"${formData.subevent.name}\\\", \\\"text\\\": \\\"${user?.firstName}\\\", \\\"status\\\": \\\"2\\\" }\") { id board { id } } }`;
+    const mutation = `mutation { create_item (board_id: 6309440166, item_name: \"Order# ${dbData.id}\", column_values: \"{ \\\"email\\\": \\\"${user?.email} ${user?.email}\\\", \\\"text0\\\": \\\"${user?.tel}\\\", \\\"text3\\\": \\\"${formData.location.name}\\\",\\\"text4\\\": \\\"${formData.event.name}\\\",\\\"text__1\\\": \\\"${formData.subevent?.name ?? ""}\\\", \\\"text\\\": \\\"${user?.firstName}\\\", \\\"status\\\": \\\"2\\\" }\") { id board { id } } }`;
     console.log(mutation);
-    const createMondayItemResult = await monday.api(mutation, options);
+    const createMondayItemResult = await mondayApiWithRetry(mutation);
     const createMondayItemId = createMondayItemResult.data.create_item.id;
 
     // Insert the createMondayItemId into formData
     formData.MondayItemId = createMondayItemId;
 
-    // Process subitems sequentially but without forced delays
-    // Only add delays during retries for failed requests
-    const updatedItems = [];
-    for (let i = 0; i < formData.items.length; i++) {
-      const item = formData.items[i];
-      console.log(
-        `Creating subitem ${i + 1}/${formData.items.length}: ${item.name}`,
-      );
-
-      try {
-        const itemId = await createSubitem(
-          item,
-          createMondayItemResult.data.create_item.id,
-        );
-
-        if (!itemId) {
-          throw new Error(`Failed to create subitem for ${item.name}`);
-        }
-
-        updatedItems.push({ ...item, itemId });
-        // No delay here - proceed immediately to next item on success
-      } catch (error) {
-        console.error(`Error creating subitem ${i + 1} (${item.name}):`, error);
-        // Instead of failing the entire order, mark this item as failed
-        // but continue with other items
-        updatedItems.push({
-          ...item,
-          itemId: null,
-          error: `Failed to create: ${error instanceof Error ? error.message : String(error)}`,
-        });
-      }
+    // Task 1: Early persistence of mondayItemId
+    try {
+      await api.formResponse.updateWithMondayData.mutate({
+        id: dbData.id,
+        mondayItemId: createMondayItemId,
+      });
+    } catch (err) {
+      console.error("Failed to persist mondayItemId early", err);
     }
 
-    // Check if any subitems failed to create
-    const failedItems = updatedItems.filter((item) => !item.itemId);
-    if (failedItems.length > 0) {
-      console.warn(
-        `Warning: ${failedItems.length} subitem(s) failed to create:`,
-        failedItems.map((item) => item.name),
+    // Task 2: Move subitem processing to background route (fire-and-forget)
+    try {
+      const rawBase = env.NEXTAUTH_URL ?? process.env.NEXTAUTH_URL ?? "";
+      const baseUrl = rawBase?.startsWith("http")
+        ? rawBase
+        : rawBase
+          ? `https://${rawBase}`
+          : "http://localhost:3000";
+      // Do not await; run in background
+      void fetch(`${baseUrl}/api/orders/${dbData.id}/sync-items`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      }).catch((e) =>
+        console.error("Failed to trigger background sync-items", e),
       );
-
-      // You might want to implement a retry mechanism here
-      // or handle partial failures differently based on your business logic
+    } catch (err) {
+      console.error("Error firing background subitem processing", err);
     }
 
-    // Update the formData with the updated items
-    const updatedFormData = { ...formData, items: updatedItems };
+    // Background job will update items; return current formData with MondayItemId
+    const updatedFormData = { ...formData };
 
     return { createMondayItemId, updatedFormData };
   } catch (error) {
@@ -268,7 +269,7 @@ export async function createMondayItem(
 
 export async function createMondayUserItem({ data }: AuthResponse) {
   const mutation = `mutation { create_item (board_id: 6354338796, item_name: \"${data.user?.user_metadata.first_name} ${data.user?.user_metadata.last_name}\", column_values: \"{ \\\"text__1\\\": \\\"${data.user?.email}\\\" }\") { id board { id } } }`;
-  const result = await monday.api(mutation, options);
+  const result = await mondayApiWithRetry(mutation);
   console.log("createMondayUserItem", result);
 }
 
@@ -318,13 +319,13 @@ async function retryApiCall<T>(
 export async function createSubitem(
   data: InventoryFormData["items"][number],
   newItemId: string,
-) {
+): Promise<string> {
   return retryApiCall(
     async () => {
       const { name, id, quantity } = data;
       console.log("item name", name);
       const mutation = `mutation { create_subitem (parent_item_id: ${newItemId}, item_name: ${JSON.stringify(name)}, column_values: \"{ \\\"numbers\\\": \\\"${quantity.checkout}\\\",\\\"text\\\": \\\"${id}\\\" }\") { id board { id } } }`;
-      const result = await monday.api(mutation, options);
+      const result: any = await mondayApiWithRetry(mutation);
 
       if (!result?.data?.create_subitem?.id) {
         throw new Error(
@@ -332,34 +333,31 @@ export async function createSubitem(
         );
       }
 
-      const query2 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers5\"]) { text }} }`;
-      const query3 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers\"]) { text }} }`;
-      const query4 = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers6\"]) { text }} }`;
-
-      const result3 = await monday.api(query2, options);
-      const currentStock = result3.data.items[0].column_values[0].text;
+      // Consolidated single query for multiple columns
+      const consolidated = `query { items (ids: \"${id}\") { column_values (ids: [\"numbers5\", \"numbers\", \"numbers6\"]) { id text } } }`;
+      const consolidatedResult: any = await mondayApiWithRetry(consolidated);
+      const columns: Array<{ id: string; text: string }> =
+        consolidatedResult.data.items[0].column_values;
+      const getText = (colId: string) =>
+        columns.find((c) => c.id === colId)?.text ?? "0";
+      const currentStock = getText("numbers5");
       console.log("currentStock", currentStock);
-      const result4 = await monday.api(query3, options);
-      const currentCheckedOut =
-        result4.data.items[0].column_values[0].text || 0;
-      const result5 = await monday.api(query4, options);
-      const alterTriggerQuantity =
-        result5.data.items[0].column_values[0].text || 0;
+      const currentCheckedOut = getText("numbers");
+      const alterTriggerQuantity = getText("numbers6");
 
       console.log("currentCheckedOut", currentCheckedOut);
 
-      const alterTriggerQuantityNum = parseInt(alterTriggerQuantity, 10);
+      const alterTriggerQuantityNum = toNum(alterTriggerQuantity);
 
-      const newQuantity = parseInt(currentStock, 10) - quantity.checkout;
+      const newQuantity = toNum(currentStock) - toNum(quantity.checkout);
       console.log("newQuantity", newQuantity);
       console.log("alterTriggerQuantityNum", alterTriggerQuantityNum);
-      const newCheckOut = parseInt(currentCheckedOut, 10) + quantity.checkout;
-      const newStockBeforeRestock =
-        newQuantity - parseInt(alterTriggerQuantity, 10);
+      const newCheckOut = toNum(currentCheckedOut) + toNum(quantity.checkout);
+      const newStockBeforeRestock = newQuantity - toNum(alterTriggerQuantity);
       console.log("newStockBeforeRestock", newStockBeforeRestock);
 
       const mutation2 = `mutation { change_multiple_column_values (board_id: 5798486455, item_id: \"${id}\", column_values: \"{ \\\"numbers5\\\": \\\"${newQuantity}\\\", \\\"numbers\\\": \\\"${newCheckOut}\\\", \\\"numbers67\\\": \\\"${newStockBeforeRestock}\\\"}\") { id }}`;
-      const result6 = await monday.api(mutation2, options);
+      const result6: any = await mondayApiWithRetry(mutation2);
       console.log("result6", result6);
 
       return result.data.create_subitem.id;

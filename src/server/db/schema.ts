@@ -51,6 +51,8 @@ export const formResponses = createTable("formResponses", {
     .references(() => users.id),
   mondayItemId: varchar("mondayItemId", { length: 256 }),
   status: varchar("status", { length: 256 }),
+  processingStatus: varchar("processingStatus", { length: 64 }),
+  processingMeta: jsonb("processingMeta").$type<Record<string, unknown>>(),
 });
 
 export const formResponsesRelations = relations(formResponses, ({ one }) => ({

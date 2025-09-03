@@ -1,9 +1,6 @@
 "use server";
-import { type APIOptions } from "monday-sdk-js/types/client-api.interface";
-import mondaySdk from "monday-sdk-js";
 
-const monday = mondaySdk();
-monday.setApiVersion("2023-10");
+import { mondayApiWithRetry } from "~/app/monday/actions";
 
 export interface Workspace {
   name?: string;
@@ -18,17 +15,12 @@ interface MondayWorkspacesApiResponse {
   };
 }
 
-const options: APIOptions = {
-  token: process.env.MONDAY_TOKEN,
-};
-
 export async function fetchAllWorkspaces() {
   "use server";
   try {
     const query = "{ workspaces (limit:100) {name id description} }";
-    const result = (await monday.api(
+    const result = (await mondayApiWithRetry(
       query,
-      options,
     )) as MondayWorkspacesApiResponse;
     console.log("result", result);
     return result;

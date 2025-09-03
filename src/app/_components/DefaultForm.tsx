@@ -129,10 +129,12 @@ export function DefaultForm({
 
   // Define Form Schemas
   const baseItemSchema = z.object({
-    categories: z.object({
-      id: z.string({ required_error: "Please select an Event." }),
-      title: z.string({ required_error: "Please select an Event." }),
-    }),
+    categories: z
+      .object({
+        id: z.string({ required_error: "Please select an Event." }),
+        title: z.string({ required_error: "Please select an Event." }),
+      })
+      .optional(),
     id: z.string({ required_error: "Product ID is required." }),
     name: z
       .string({
@@ -274,17 +276,14 @@ export function DefaultForm({
         title: checkin
           ? "Sucessfully Checked In Order"
           : "Sucessfully Checked Out Order",
-        // description: (
-        //   // <div className="min-h-[150px]">{/* <ConfettiComponent /> */}</div>
-
-        //   <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-        //     Sucessfully Submitted:
-        //     <code className="text-white">
-        //       {JSON.stringify(formData, null, 2)}
-        //     </code>
-        //   </pre>
-        // ),
       });
+      if (!checkin) {
+        toast({
+          title: "Items are syncing…",
+          description:
+            "Your order was created. Subitems are being synced to Monday in the background.",
+        });
+      }
     } catch (error) {
       console.error("Form submission error:", error);
 
@@ -982,11 +981,7 @@ export function DefaultForm({
                                       placeholder={0}
                                       min={0}
                                       max={checkoutQuantity}
-                                      disabled={
-                                        !form.watch(
-                                          `items.${index}.categories`,
-                                        ) || readonly
-                                      }
+                                      disabled={readonly}
                                     />
                                   </FormControl>
 

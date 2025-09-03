@@ -147,6 +147,7 @@ export function DefaultTable({
         <TableBody>
           {data?.map((item, index) => {
             const parsedData = JSON.parse(item.data!) as InventoryFormData;
+            console.log("parsedData", parsedData);
             const totalCheckoutQuantity = parsedData.items.reduce(
               (total: any, currentItem: any) =>
                 total + currentItem.quantity.checkout,
@@ -160,7 +161,7 @@ export function DefaultTable({
                   {item.users.firstName} {item.users.lastName}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {parsedData.event.name ?? "undefined"}
+                  {parsedData.event?.name ?? "undefined"}
                 </TableCell>
                 <TableCell className="text-center font-medium">
                   {totalCheckoutQuantity}

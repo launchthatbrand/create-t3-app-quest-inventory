@@ -6,6 +6,10 @@ const PUBLIC_PATHS = ["/register", "/login", "/resetpass"];
 
 export async function middleware(request: NextRequest) {
   console.log("middleware_activated");
+  // Allow internal background processing route to pass without auth
+  if (request.nextUrl.pathname.startsWith("/api/orders/")) {
+    return NextResponse.next();
+  }
   let response = NextResponse.next({
     request: {
       headers: request.headers,
