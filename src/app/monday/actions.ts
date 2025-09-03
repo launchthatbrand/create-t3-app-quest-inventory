@@ -16,7 +16,7 @@ import mondaySdk from "monday-sdk-js";
 import { type APIOptions } from "monday-sdk-js/types/client-api.interface";
 import { JsonObject } from "next-auth/adapters";
 import { AuthResponse } from "@supabase/supabase-js";
-import { env } from "~/env.js";
+import { headers } from "next/headers";
 
 const monday = mondaySdk();
 monday.setApiVersion("2023-10");
@@ -33,6 +33,16 @@ const toNum = (v: unknown): number => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 };
+
+function resolveBaseUrl(): string {
+  const h = headers();
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = h.get("host") ?? process.env.VERCEL_URL;
+  if (host) return `${proto}://${host}`;
+  return process.env.NODE_ENV === "production"
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+}
 
 export async function saveFormResponse(values: string) {
   try {
@@ -85,12 +95,7 @@ export async function updateFormResponse(orderId: number, values: string) {
 
     // Trigger background processing for checkin (fire-and-forget)
     try {
-      const rawBase = env.NEXTAUTH_URL ?? process.env.NEXTAUTH_URL ?? "";
-      const baseUrl = rawBase?.startsWith("http")
-        ? rawBase
-        : rawBase
-          ? `https://${rawBase}`
-          : "http://localhost:3000";
+      const baseUrl = resolveBaseUrl();
       void fetch(`${baseUrl}/api/orders/${orderId}/checkin-items`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -240,12 +245,7 @@ export async function createMondayItem(
 
     // Task 2: Move subitem processing to background route (fire-and-forget)
     try {
-      const rawBase = env.NEXTAUTH_URL ?? process.env.NEXTAUTH_URL ?? "";
-      const baseUrl = rawBase?.startsWith("http")
-        ? rawBase
-        : rawBase
-          ? `https://${rawBase}`
-          : "http://localhost:3000";
+      const baseUrl = resolveBaseUrl();
       // Do not await; run in background
       void fetch(`${baseUrl}/api/orders/${dbData.id}/sync-items`, {
         method: "POST",
