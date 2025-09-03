@@ -1,0 +1,77 @@
+Title: Quest Inventory - Checkout & Checkin Reliability and Performance PRD
+
+Overview
+- Improve reliability and performance of checkout (create order + subitems on Monday + persist mondayItemId and line itemIds) and checkin (update statuses + quantities) flows.
+- Address intermittent production failures where mondayItemId and subitem itemIds do not persist to Supabase due to serverless timeouts and Monday API rate limits.
+- Optimize Monday API calls and add resilient, observable processing.
+
+Goals
+- Ensure mondayItemId is always saved after order creation.
+- Ensure subitem itemIds are persisted incrementally with retries.
+- Reduce Monday API calls per item and add bounded concurrency.
+- Support background processing for long-running tasks.
+- Improve telemetry and error visibility.
+
+Non-Goals
+- No UI redesign beyond necessary feedback states.
+- No changes to core DB schema beyond minor additions described below.
+
+User Stories
+- As a user, when I checkout an order, I always see the order appear with its Monday link, even if line items are still processing.
+- As an operator, I want line items to sync reliably with retry even if Monday rate-limits.
+- As an admin, I need logs/metrics to understand failures and re-run processing.
+- As a user, checkin updates should be fast and reliable, with clear success feedback.
+
+Key Changes
+1) Early persistence & incremental updates
+- After Monday create_item succeeds, immediately update `formResponses.mondayItemId`.
+- Persist subitem `itemId` to `formResponses.data` incrementally (per-subitem or small batch) rather than at the end.
+
+2) Background processing for subitems
+- Split subitem processing into a non-blocking path: enqueue a background job or call a non-user-blocking route handler.
+- Client shows order created, with status "processing"; items sync asynchronously.
+
+3) Retry and rate limit handling
+- Extend retry with exponential backoff for: create_item, create_subitem, and final DB updates.
+- Detect Monday 429 responses and apply backoff.
+
+4) Reduce Monday API round-trips and add concurrency control
+- Replace 3 separate queries for each of numbers5, numbers, numbers6 with a single multi-column query.
+- Limit concurrency for subitem processing (e.g., 2-3 at a time) to balance speed and rate limits.
+
+5) Observability
+- Structured logs: per order timing, per subitem timing, step names, retries, and final outcomes.
+- Optional: capture errors to a table `processing_logs` for post-mortem and manual retry.
+
+6) Schema updates (optional)
+- Add `processingStatus` (varchar) to `formResponses` with values: pending, processing, completed, failed.
+- Add `processingMeta` (jsonb) for per-item statuses and error messages.
+
+7) API/Server changes
+- Server action `saveFormResponse` updates DB with mondayItemId immediately after create_item.
+- Subitems handled via background route `POST /api/orders/:id/sync-items` (or queue).
+- `updateFormResponse` (checkin) adds retry and consolidated Monday fetch.
+
+8) Client UX changes
+- After checkout submit: show success with "Order created. Items are syncing…" and surface mondayItemId link.
+- Provide a refresh/auto-poll to update when items finish syncing.
+
+Acceptance Criteria
+- 99.9% of orders have mondayItemId persisted even under Monday API rate limiting.
+- 99% of line items sync on first pass; remaining items succeed with retry within 10 minutes.
+- Average checkout server action duration < 2s (excluding background processing).
+- Checkin completes updates with retries and consolidated queries.
+
+Risks & Mitigations
+- Monday API outages: queue with delayed retry; surface partial success states.
+- Serverless timeouts: move heavy work to background; persist early.
+
+Milestones
+- M1: Early persistence for mondayItemId + retries (1-2 days)
+- M2: Background subitem processing + incremental DB sync (2-3 days)
+- M3: Monday API consolidation + concurrency control (1-2 days)
+- M4: Observability & admin tooling (1-2 days)
+
+Open Questions
+- Preferred background mechanism (route handler vs. queue worker)?
+- Required retention for processing logs? 
